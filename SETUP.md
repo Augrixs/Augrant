@@ -11,10 +11,10 @@
 
 ### A2. สร้างบัญชีแอดมินของคุณ (มีคนเดียว)
 1. ไปที่ **Authentication** > **Users** > **Add user** > **Create new user**
-2. Email ใส่ `ชื่อที่คุณอยากใช้@augrant.app` เช่น `augrixs@augrant.app` (อีเมลนี้ไม่ต้องมีจริง แอปใช้แค่ส่วนหน้า @ เป็น username)
+2. Email ใส่ `augrixs@augrant.app` (อีเมลนี้ไม่ต้องมีจริง แอปใช้แค่ส่วนหน้า @ เป็น username ตอน Log in พิมพ์ Augrixs ตัวใหญ่หรือเล็กก็ได้)
 3. ตั้งรหัสผ่านที่ยาว เดายาก และไม่ซ้ำกับที่อื่น
 4. ติ๊ก **Auto Confirm User** แล้วกดสร้าง
-5. กลับไป **SQL Editor** วางคำสั่งนี้ โดยแก้ `augrixs` ให้เป็นชื่อที่คุณใช้ในข้อ 2 ทั้งสองที่ แล้วกด Run
+5. กลับไป **SQL Editor** วางคำสั่งนี้ (ใส่ชื่อ augrixs ไว้ให้แล้ว ไม่ต้องแก้) แล้วกด Run
 
 ```sql
 insert into public.profiles (id, username, display_name, role)
@@ -22,7 +22,9 @@ insert into public.profiles (id, username, display_name, role)
   on conflict (id) do update set role = 'admin';
 ```
 
-ต้องขึ้น `Success. 1 row affected` ถ้าขึ้น 0 rows แปลว่าอีเมลในข้อ 2 กับในคำสั่งไม่ตรงกัน
+ต้องขึ้น `Success. 1 row affected` ถ้าขึ้น 0 rows แปลว่าอีเมลในข้อ 2 สะกดไม่ตรงกับ `augrixs@augrant.app`
+
+บัญชีนี้เป็นบัญชีเดียวที่เป็นแอดมิน บัญชีที่สร้างจากแท็บ Admin จะเป็นผู้ใช้ทั่วไปเสมอ จึงไม่เห็นแท็บ Admin
 
 ### A3. ติดตั้งฟังก์ชันสร้างและลบบัญชี
 1. ไปที่ **Edge Functions** > **Deploy a new function** > **Via Editor**
