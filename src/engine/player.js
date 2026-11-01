@@ -61,6 +61,57 @@ export function invalidateCaptions(p) {
   p.wordsVersion = (p.wordsVersion || 0) + 1;
 }
 
+// One background canvas per output size. It keeps the last video frame that was decoded.
+function bgLayer(p, W, H) {
+  const key = W + 'x' + H;
+  if (!p._bg || p._bg.key !== key) {
+    const cv = document.createElement('canvas');
+    cv.width = W;
+    cv.height = H;
+    p._bg = { key, cv, ctx: cv.getContext('2d'), has: false };
+  }
+  return p._bg;
+}
+
+// Moves the hidden video to time t and waits until a frame is ready to draw.
+export async function primeVideo(p, t) {
+  const v = p.video && p.video.el;
+  const c = clipAt(p.vClips, t) || p.vClips[0];
+  if (!v || !c) return;
+  let want = c.srcStart + Math.max(0, t - c.start);
+  if (v.duration && want > v.duration - 0.05) want = Math.max(0, v.duration - 0.05);
+  if (!v.paused) v.pause();
+  if (Math.abs(v.currentTime - want) > 0.02) {
+    await new Promise((resolve) => {
+      let done = false;
+      const fin = () => {
+        if (done) return;
+        done = true;
+        v.removeEventListener('seeked', fin);
+        clearTimeout(timer);
+        resolve();
+      };
+      const timer = setTimeout(fin, 4000);
+      v.addEventListener('seeked', fin);
+      v.currentTime = want;
+    });
+  }
+  if (v.readyState < 2) {
+    await new Promise((resolve) => {
+      const timer = setTimeout(resolve, 3000);
+      v.addEventListener(
+        'canplay',
+        () => {
+          clearTimeout(timer);
+          resolve();
+        },
+        { once: true },
+      );
+    });
+  }
+  v._clipId = c.id;
+}
+
 // Draws one frame. `hit` (optional array) receives bounding boxes in logical coordinates.
 export function renderFrame(ctx, W, H, p, t, opts = {}) {
   const hit = opts.hit;
@@ -70,11 +121,18 @@ export function renderFrame(ctx, W, H, p, t, opts = {}) {
 
   const v = p.video && p.video.el;
   const clip = clipAt(p.vClips, t);
+  const bg = bgLayer(p, W, H);
   if (clip && v && v.readyState >= 2 && v.videoWidth) {
     const sc = Math.max(LW / v.videoWidth, LH / v.videoHeight);
     const dw = v.videoWidth * sc;
     const dh = v.videoHeight * sc;
-    ctx.drawImage(v, (LW - dw) / 2, (LH - dh) / 2, dw, dh);
+    bg.ctx.setTransform(W / LW, 0, 0, H / LH, 0, 0);
+    bg.ctx.drawImage(v, (LW - dw) / 2, (LH - dh) / 2, dw, dh);
+    bg.has = true;
+  }
+  if (clip && bg.has) {
+    // the last decoded frame stays on screen while the video catches up after a seek
+    ctx.drawImage(bg.cv, 0, 0, LW, LH);
   } else {
     drawGradient(ctx, opts.now || 0);
   }
@@ -157,7 +215,14 @@ export function syncVideo(p, t, playing) {
   let want = c.srcStart + (t - c.start);
   if (v.duration && want > v.duration - 0.05) want = Math.max(0, v.duration - 0.05);
   if (playing) {
-    if (Math.abs(v.currentTime - want) > 0.35) v.currentTime = want;
+    const now = performance.now();
+    const changed = v._clipId !== c.id;
+    v._clipId = c.id;
+    // seek only when the clip changed or the picture is far behind, and not again right away
+    if (Math.abs(v.currentTime - want) > 0.6 && (changed || now - (v._seekAt || 0) > 1500)) {
+      v._seekAt = now;
+      v.currentTime = want;
+    }
     if (v.paused) v.play().catch(() => {});
   } else {
     if (!v.paused) v.pause();
@@ -179,6 +244,7 @@ export function createTransport(p, { onFrame, onEnd, exportMode = false }) {
   let t0 = 0;
   let c0 = 0;
   let raf = 0;
+  let token = 0; // bumped by pause, seek and dispose so a play() still waiting for the video gives up
 
   function ensureGraph() {
     if (actx) return;
@@ -237,11 +303,24 @@ export function createTransport(p, { onFrame, onEnd, exportMode = false }) {
   }
 
   async function play() {
+    const my = ++token;
     ensureGraph();
     if (actx.state !== 'running') await actx.resume();
     const dur = duration(p);
     if (t >= dur - 0.05) t = 0;
     stopSources();
+    // get the first picture ready, and the video running, before the sound starts
+    await primeVideo(p, t);
+    if (my !== token) return false;
+    const v = p.video && p.video.el;
+    if (v && clipAt(p.vClips, t)) {
+      try {
+        await Promise.race([v.play(), new Promise((res) => setTimeout(res, 1500))]);
+      } catch {
+        /* syncVideo tries again on the next frame */
+      }
+      if (my !== token) return false;
+    }
     const when = actx.currentTime + 0.08;
     sources = scheduleAudio(actx, voiceG, bgG, p, t, when);
     t0 = t;
@@ -249,9 +328,11 @@ export function createTransport(p, { onFrame, onEnd, exportMode = false }) {
     playing = true;
     cancelAnimationFrame(raf);
     raf = requestAnimationFrame(frame);
+    return true;
   }
 
   function pause() {
+    token++;
     if (!playing) return;
     playing = false;
     stopSources();
@@ -259,6 +340,7 @@ export function createTransport(p, { onFrame, onEnd, exportMode = false }) {
   }
 
   function seek(nt) {
+    token++;
     const dur = duration(p);
     t = Math.min(Math.max(0, nt), dur);
     if (playing) {
@@ -279,6 +361,7 @@ export function createTransport(p, { onFrame, onEnd, exportMode = false }) {
   }
 
   function dispose() {
+    token++;
     playing = false;
     stopSources();
     cancelAnimationFrame(raf);

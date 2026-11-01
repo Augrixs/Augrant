@@ -455,7 +455,7 @@ export function createFlow(onExit) {
         setPlayIcon(false);
       } else {
         await transport.play();
-        setPlayIcon(true);
+        setPlayIcon(transport.playing);
       }
     });
 
@@ -473,6 +473,7 @@ export function createFlow(onExit) {
         const v = await loadVideo(f);
         const old = p.video;
         p.video = v;
+        p._bg = null;
         p.vClips = fitVideoToAudio(v.dur, total(p.aClips));
         releaseVideo(old);
         renderTimeline();

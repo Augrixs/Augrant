@@ -1,4 +1,4 @@
-import { renderFrame, createTransport, duration, syncVideo } from './player.js';
+import { renderFrame, createTransport, duration, syncVideo, primeVideo } from './player.js';
 import { renderMp3 } from './audio.js';
 
 export const QUALITIES = [
@@ -60,6 +60,13 @@ export async function exportProject(p, { format, quality, onProgress, signal }) 
     wake = await navigator.wakeLock.request('screen');
   } catch {
     /* optional */
+  }
+
+  // Make sure the first video frame is ready before recording starts, so the clip never opens on the fallback background.
+  await primeVideo(p, 0);
+  if (signal && signal.aborted) {
+    if (wake) wake.release().catch(() => {});
+    throw new Error('cancelled');
   }
 
   return new Promise((resolve, reject) => {
