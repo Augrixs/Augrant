@@ -100,8 +100,9 @@ drop policy if exists clips_insert on public.clips;
 create policy clips_insert on public.clips for insert to authenticated
   with check (user_id = auth.uid());
 
--- Overview for the admin panel. Returns rows only to admins; everyone else gets nothing.
-create or replace view public.admin_overview with (security_invoker = false) as
+-- Overview for the admin panel. security_invoker makes it run with the caller's own rights, so the
+-- row level rules above apply. It returns rows only to admins; everyone else gets nothing.
+create or replace view public.admin_overview with (security_invoker = true) as
 select
   p.id, p.username, p.display_name, p.role, p.created_at,
   (select max(a.created_at) from public.activity a where a.user_id = p.id and a.type = 'login') as last_login,
