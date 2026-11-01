@@ -1,0 +1,7 @@
+{
+  "appId": "com.augrixs.augrant",
+  "appName": "Augrant",
+  "webDir": "dist",
+  "server": { "androidScheme": "https" },
+  "android": { "allowMixedContent": false }
+}

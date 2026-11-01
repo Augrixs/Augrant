@@ -1,0 +1,56 @@
+name: Build APK
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Install packages
+        run: npm install --no-audit --no-fund
+
+      - name: Check the core logic
+        run: npm test
+
+      - name: Build the web part
+        run: npm run build
+
+      - name: Create the Android project
+        run: npx cap add android
+
+      - name: Add plugin, icons, permissions and signing
+        run: python3 scripts/patch_android.py
+        env:
+          RUN_NUMBER: ${{ github.run_number }}
+
+      - name: Copy the web build into Android
+        run: npx cap sync android
+
+      - name: Build the APK
+        working-directory: android
+        run: ./gradlew assembleDebug --no-daemon
+
+      - name: Keep the APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Augrant-APK
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
