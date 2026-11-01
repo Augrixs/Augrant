@@ -6,7 +6,7 @@ import { decodeFile, peaksOf, renderVoice16k, loudnessGain } from '../engine/aud
 import { renderFrame, createTransport, duration, invalidateCaptions, getCaptionLines, primeVideo, LW, LH } from '../engine/player.js';
 import { transcribe, LANGS } from '../engine/whisper.js';
 import { exportProject, QUALITIES, FORMATS } from '../engine/exporter.js';
-import { requestMedia, pickFolder, savedFolder, saveBlob, isNative } from '../native.js';
+import { requestMedia, pickFolder, savedFolder, saveBlob, isNative, isIOS } from '../native.js';
 import { saveClip } from '../supa.js';
 
 const COLORS = ['#FFD43B', '#4DF0B0', '#FF6B9A', '#62D9FF', '#FF8A3D', '#B28DFF', '#FFFFFF'];
@@ -1015,7 +1015,7 @@ export function createFlow(onExit) {
       const fmtBox = h('div', { class: 'opt' }, FORMATS.map((f) => h('label', {}, h('input', { type: 'radio', name: 'fmt', value: f.id, checked: f.id === fmt }), h('span', {}, f.label))));
       const qSel = h('select', { class: 'input', id: 'qsel' }, QUALITIES.map((q) => h('option', { value: q.id }, q.label)));
       qSel.value = quality;
-      const folderLbl = h('div', { class: 'muted small' }, isNative ? (folder ? 'โฟลเดอร์: ' + folder.name : 'ยังไม่ได้เลือกโฟลเดอร์') : 'บนเบราว์เซอร์ไฟล์จะลงโฟลเดอร์ดาวน์โหลด');
+      const folderLbl = h('div', { class: 'muted small' }, isNative ? (folder ? 'โฟลเดอร์: ' + folder.name : 'ยังไม่ได้เลือกโฟลเดอร์') : isIOS ? 'บน iPhone พอ export เสร็จจะเปิดหน้าต่างแชร์ให้เลือกที่บันทึก' : 'บนเบราว์เซอร์ไฟล์จะลงโฟลเดอร์ดาวน์โหลด');
       const folderBtn = h('button', { class: 'btn', type: 'button', hidden: !isNative }, icon('folder'), 'เลือกโฟลเดอร์ที่จะบันทึก');
       const barFill = h('i', {});
       const prog = h('div', { class: 'bar', hidden: true }, barFill);

@@ -1,7 +1,10 @@
 import { Capacitor, registerPlugin } from '@capacitor/core';
 
 const Saf = registerPlugin('Saf');
-export const isNative = Capacitor.isNativePlatform();
+const platform = Capacitor.getPlatform();
+export const isIOS = platform === 'ios';
+// true only where the app can pick a save folder (the Android app). The iPhone app uses the share sheet instead.
+export const isNative = platform === 'android';
 
 const FOLDER_KEY = 'augrant.folder';
 
@@ -51,6 +54,18 @@ function blobToBase64(blob) {
 
 // Writes the blob into the chosen folder in 1 MB pieces. In a normal browser it downloads the file.
 export async function saveBlob(folder, name, mime, blob, onProgress) {
+  if (isIOS && navigator.share) {
+    // iPhone: the share sheet lets the person pick "Save Video", "Save to Files", etc.
+    const file = new File([blob], name, { type: mime });
+    try {
+      if (!navigator.canShare || navigator.canShare({ files: [file] })) {
+        await navigator.share({ files: [file], title: name });
+        return { where: 'ที่คุณเลือกในหน้าต่างแชร์' };
+      }
+    } catch (e) {
+      if (e && e.name === 'AbortError') throw new Error('cancelled');
+    }
+  }
   if (!isNative || !folder) {
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);

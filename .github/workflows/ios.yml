@@ -1,0 +1,40 @@
+name: Build iOS (unsigned IPA)
+
+# Press "Run workflow" on the Actions page to build. The result is an UNSIGNED .ipa:
+# it must be signed on the phone with AltStore or Sideloadly (free Apple ID works, 7-day limit).
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install
+      - run: npm test
+      - run: npm run build
+      - run: npx cap add ios
+      - run: python3 scripts/patch_ios.py
+      - name: App icon
+        run: |
+          ICON=ios/App/App/Assets.xcassets/AppIcon.appiconset
+          mkdir -p "$ICON"
+          sips -z 1024 1024 src/assets/cover.png --out "$ICON/AppIcon-512@2x.png"
+      - run: npx cap sync ios
+      - name: Build
+        run: |
+          xcodebuild -workspace ios/App/App.xcworkspace -scheme App -configuration Release \
+            -sdk iphoneos -destination 'generic/platform=iOS' -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" build
+      - name: Package IPA
+        run: |
+          mkdir Payload
+          cp -R build/Build/Products/Release-iphoneos/App.app Payload/
+          zip -qr Augrant.ipa Payload
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Augrant-iOS-unsigned-IPA
+          path: Augrant.ipa

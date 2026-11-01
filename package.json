@@ -13,6 +13,7 @@
     "@capacitor/android": "^6.2.0",
     "@capacitor/app": "^6.0.0",
     "@capacitor/core": "^6.2.0",
+    "@capacitor/ios": "^6.2.0",
     "@fontsource/bai-jamjuree": "^5.0.0",
     "@fontsource/chakra-petch": "^5.0.0",
     "@fontsource/itim": "^5.0.0",
