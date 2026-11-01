@@ -1,7 +1,7 @@
-import { clipAt, projectDuration } from '../core/timeline.js';
+import { clipAt, projectDuration, srcTimeOf } from '../core/timeline.js';
 import { layoutLines, currentWordIndex, lineAt, isThai } from '../core/captions.js';
 import { canvasFont } from '../fonts.js';
-import { audioContext, scheduleAudio } from './audio.js';
+import { audioContext, scheduleAudio, makeLimiter } from './audio.js';
 
 export const LW = 1080; // logical canvas size, scaled to the real canvas on draw
 export const LH = 1920;
@@ -73,15 +73,22 @@ function bgLayer(p, W, H) {
   return p._bg;
 }
 
-// Moves the hidden video to time t and waits until a frame is ready to draw.
-export async function primeVideo(p, t) {
-  const v = p.video && p.video.el;
+const videoOf = (p, c) => {
+  const s = c && p.sources[c.src];
+  return s && s.el ? s.el : null;
+};
+const clampSrc = (v, want) => (v.duration && want > v.duration - 0.05 ? Math.max(0, v.duration - 0.05) : want);
+
+// Moves the video of the clip at time t to the right frame and waits until it can be drawn.
+// Used before playing and for every frame of an export.
+export async function primeVideo(p, t, tol = 0.02) {
   const c = clipAt(p.vClips, t) || p.vClips[0];
+  const v = videoOf(p, c);
+  for (const s of Object.values(p.sources)) if (s.el && s.el !== v && !s.el.paused) s.el.pause();
   if (!v || !c) return;
-  let want = c.srcStart + Math.max(0, t - c.start);
-  if (v.duration && want > v.duration - 0.05) want = Math.max(0, v.duration - 0.05);
+  const want = clampSrc(v, srcTimeOf(c, Math.min(Math.max(t, c.start), c.start + c.dur)));
   if (!v.paused) v.pause();
-  if (Math.abs(v.currentTime - want) > 0.02) {
+  if (Math.abs(v.currentTime - want) > tol || v.seeking) {
     await new Promise((resolve) => {
       let done = false;
       const fin = () => {
@@ -119,8 +126,8 @@ export function renderFrame(ctx, W, H, p, t, opts = {}) {
   ctx.setTransform(W / LW, 0, 0, H / LH, 0, 0);
   ctx.clearRect(0, 0, LW, LH);
 
-  const v = p.video && p.video.el;
   const clip = clipAt(p.vClips, t);
+  const v = videoOf(p, clip);
   const bg = bgLayer(p, W, H);
   if (clip && v && v.readyState >= 2 && v.videoWidth) {
     const sc = Math.max(LW / v.videoWidth, LH / v.videoHeight);
@@ -203,30 +210,45 @@ export function renderFrame(ctx, W, H, p, t, opts = {}) {
   }
 }
 
-// Keeps the hidden <video> in step with the timeline.
+// Keeps the hidden <video> elements in step with the timeline.
+// Normal speeds use the browser's own playback rate. Very slow or very fast clips are driven by seeking.
 export function syncVideo(p, t, playing) {
-  const v = p.video && p.video.el;
-  if (!v) return;
   const c = clipAt(p.vClips, t);
-  if (!c) {
+  const v = videoOf(p, c);
+  for (const s of Object.values(p.sources)) if (s.el && s.el !== v && !s.el.paused) s.el.pause();
+  if (!c || !v) return;
+  const want = clampSrc(v, srcTimeOf(c, t));
+  const sp = c.speed || 1;
+  const drift = Math.abs(v.currentTime - want);
+  if (!playing || c.hold) {
     if (!v.paused) v.pause();
+    if (drift > 0.04) v.currentTime = want;
     return;
   }
-  let want = c.srcStart + (t - c.start);
-  if (v.duration && want > v.duration - 0.05) want = Math.max(0, v.duration - 0.05);
-  if (playing) {
-    const now = performance.now();
-    const changed = v._clipId !== c.id;
-    v._clipId = c.id;
-    // seek only when the clip changed or the picture is far behind, and not again right away
-    if (Math.abs(v.currentTime - want) > 0.6 && (changed || now - (v._seekAt || 0) > 1500)) {
-      v._seekAt = now;
-      v.currentTime = want;
-    }
-    if (v.paused) v.play().catch(() => {});
-  } else {
+  const now = performance.now();
+  const changed = v._clipId !== c.id;
+  v._clipId = c.id;
+  if (sp < 0.25 || sp > 4) {
     if (!v.paused) v.pause();
-    if (Math.abs(v.currentTime - want) > 0.04) v.currentTime = want;
+    if (!v.seeking && drift > 0.03) v.currentTime = want;
+    return;
+  }
+  if (v.playbackRate !== sp) v.playbackRate = sp;
+  const thr = 0.5 * Math.max(1, sp);
+  // seek when a new clip starts far from where the video is, or when the picture fell far behind
+  if ((changed && drift > 0.08 * Math.max(1, sp)) || (drift > thr && now - (v._seekAt || 0) > 1200)) {
+    v._seekAt = now;
+    v.currentTime = want;
+  }
+  if (v.paused || v.ended) v.play().catch(() => {});
+  // watchdog: a video that should be playing but does not move gets kicked
+  if (v.seeking || Math.abs(v.currentTime - (v._wdCT ?? -1)) > 0.001) {
+    v._wdCT = v.currentTime;
+    v._wdAt = now;
+  } else if (now - (v._wdAt || now) > 800) {
+    v._wdAt = now;
+    v.currentTime = want;
+    v.play().catch(() => {});
   }
 }
 
@@ -249,14 +271,12 @@ export function createTransport(p, { onFrame, onEnd, exportMode = false }) {
   function ensureGraph() {
     if (actx) return;
     actx = audioContext();
-    master = actx.createGain();
-    const comp = actx.createDynamicsCompressor();
-    master.connect(comp);
+    master = makeLimiter(actx, null);
     if (exportMode) {
       streamDest = actx.createMediaStreamDestination();
-      comp.connect(streamDest);
+      master.__out.connect(streamDest);
     } else {
-      comp.connect(actx.destination);
+      master.__out.connect(actx.destination);
     }
     voiceG = actx.createGain();
     bgG = actx.createGain();
@@ -284,8 +304,10 @@ export function createTransport(p, { onFrame, onEnd, exportMode = false }) {
 
   function frame(now) {
     if (playing) {
-      const el = actx.currentTime - c0;
-      t = t0 + Math.max(0, el);
+      // the sound reaches the ear a little after it is scheduled, so the picture waits for it
+      const lat = exportMode ? 0 : Math.min(0.6, actx.outputLatency || 0);
+      const el = actx.currentTime - c0 - lat;
+      t = Math.max(t0, t0 + el);
       const dur = duration(p);
       if (t >= dur) {
         t = dur;
@@ -312,10 +334,12 @@ export function createTransport(p, { onFrame, onEnd, exportMode = false }) {
     // get the first picture ready, and the video running, before the sound starts
     await primeVideo(p, t);
     if (my !== token) return false;
-    const v = p.video && p.video.el;
-    if (v && clipAt(p.vClips, t)) {
+    const cur = clipAt(p.vClips, t);
+    const v = cur && p.sources[cur.src] && p.sources[cur.src].el;
+    if (v && !cur.hold && (cur.speed || 1) >= 0.25 && (cur.speed || 1) <= 4) {
       try {
-        await Promise.race([v.play(), new Promise((res) => setTimeout(res, 1500))]);
+        v.playbackRate = cur.speed || 1;
+        await Promise.race([v.play(), new Promise((res) => setTimeout(res, 700))]);
       } catch {
         /* syncVideo tries again on the next frame */
       }
@@ -365,7 +389,7 @@ export function createTransport(p, { onFrame, onEnd, exportMode = false }) {
     playing = false;
     stopSources();
     cancelAnimationFrame(raf);
-    if (p.video && p.video.el && !p.video.el.paused) p.video.el.pause();
+    for (const s of Object.values(p.sources)) if (s.el && !s.el.paused) s.el.pause();
   }
 
   return {

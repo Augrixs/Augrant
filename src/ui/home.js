@@ -2,6 +2,7 @@ import { h, loadSettings, saveSettings, toast, confirmSheet } from '../util.js';
 import { me, signOutNow } from '../supa.js';
 import { QUALITIES, FORMATS } from '../engine/exporter.js';
 import { MODELS, clearModelCache } from '../engine/whisper.js';
+import { setSfx } from '../sfx.js';
 import cover from '../assets/cover.png';
 
 export function homeView(go) {
@@ -63,6 +64,12 @@ export function settingsView(go) {
           s.whisper,
           (v) => upd('whisper', v),
         ),
+      ),
+      h(
+        'label',
+        { class: 'row', style: { gap: '10px' } },
+        h('input', { type: 'checkbox', checked: s.sfx !== false, onchange: (e) => { upd('sfx', e.target.checked); setSfx(e.target.checked); } }),
+        'เสียงเอฟเฟกต์ตอนกดปุ่ม',
       ),
       h(
         'button',

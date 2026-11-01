@@ -49,6 +49,9 @@ export const ICON = {
   upload: svg('<path d="M12 16V4M7 9l5-5 5 5M4 20h16"/>'),
   check: svg('<path d="M5 12l5 5 9-10"/>'),
   logout: svg('<path d="M9 4H5v16h4M16 8l4 4-4 4M20 12H9"/>'),
+  speed: svg('<path d="M4 18a8 8 0 1116 0"/><path d="M12 18l4-6"/><path d="M12 6v2M5.5 9l1.4 1.4M18.5 9l-1.4 1.4"/>'),
+  copy: svg('<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M4 16V4h12"/>'),
+  clock: svg('<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>'),
   image: svg('<rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5-8 8"/>'),
 };
 
@@ -150,7 +153,7 @@ export function debounce(fn, ms) {
 }
 
 export function loadSettings() {
-  const def = { quality: '720', format: 'mp4', voiceVol: 100, bgVol: 30, whisper: 'base' };
+  const def = { quality: '720', format: 'mp4', voiceVol: 100, bgVol: 30, whisper: 'base', sfx: true };
   try {
     return { ...def, ...JSON.parse(localStorage.getItem('augrant.settings') || '{}') };
   } catch {

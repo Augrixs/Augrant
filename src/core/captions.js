@@ -92,6 +92,16 @@ export function layoutLines(words, measure, maxW, gap) {
   return lines;
 }
 
+// A clip starting at `start` changed length from oldDur to newDur (speed change):
+// words inside it are stretched, words after it move by the difference.
+export function remapWordsForClip(words, start, oldDur, newDur) {
+  const end = start + oldDur;
+  const k = newDur / oldDur;
+  const shift = newDur - oldDur;
+  const map = (x) => (x <= start ? x : x >= end ? x + shift : start + (x - start) * k);
+  return words.map((w) => ({ ...w, s: map(w.s), e: map(w.e) }));
+}
+
 // A stretch [from, from + dur) was cut out of the voice track: drop its words, pull later words left.
 export function rippleWords(words, from, dur) {
   const to = from + dur;

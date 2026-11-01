@@ -7,6 +7,7 @@ import { homeView, settingsView, creditsView } from './ui/home.js';
 import { profileView } from './ui/profile.js';
 import { adminView } from './ui/admin.js';
 import { createFlow } from './ui/create.js';
+import { installTapSounds } from './sfx.js';
 
 const app = document.getElementById('app');
 let current = null; // the node of the screen on show, kept so we can dispose the editor
@@ -66,4 +67,5 @@ async function boot() {
   go('login');
 }
 
+installTapSounds();
 boot();

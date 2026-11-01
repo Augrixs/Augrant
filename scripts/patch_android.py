@@ -32,7 +32,7 @@ if not os.path.isdir(APP):
 
 # 1) native plugin and activity
 os.makedirs(PKG_DIR, exist_ok=True)
-for name in ('SafPlugin.java', 'MainActivity.java'):
+for name in ('SafPlugin.java', 'MainActivity.java', 'PickerChromeClient.java'):
     shutil.copy(os.path.join(ROOT, 'native', name), os.path.join(PKG_DIR, name))
 
 # 2) icons: remove the adaptive icon definitions so our PNG icons are the ones used
