@@ -1,4 +1,4 @@
-import lamejs from '@breezystack/lamejs';
+import { Mp3Encoder } from '@breezystack/lamejs';
 import { clipAt } from '../core/timeline.js';
 
 let shared = null;
@@ -88,7 +88,7 @@ export async function renderMp3(project, duration, onProgress) {
   };
   const li = toInt(l);
   const ri = toInt(r);
-  const enc = new lamejs.Mp3Encoder(2, rate, 128);
+  const enc = new Mp3Encoder(2, rate, 128);
   const parts = [];
   const block = 1152 * 10;
   for (let i = 0; i < li.length; i += block) {
