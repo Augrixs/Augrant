@@ -74,3 +74,9 @@ insert into public.profiles (id, username, display_name, role)
 - Export วิดีโอใช้เวลาเท่าความยาวคลิป ห้ามสลับแอปและห้ามปิดหน้าจอ ถ้าค้างให้ลดความละเอียด
 - เสียงที่ได้ในไฟล์ Export คือเสียงจากไฟล์ที่อัปโหลดผสมกับเสียงวิดีโอพื้นหลัง
 - ไฟล์ `native/debug.keystore` เป็นกุญแจเซ็นไฟล์สำหรับติดตั้งเอง ใช้ติดตั้งนอก Play Store เท่านั้น เก็บ repository เป็น Private ไว้
+
+## Social features (friends, posts, chat, inbox)
+
+Run `supabase/social.sql` once: Supabase > SQL Editor > New query > paste the whole file > Run.
+It adds friends, chat, posts, likes, comments, notifications and the `posts` storage bucket for pictures and videos.
+Without it the Social, Post, Inbox and Chat tabs show errors.

@@ -7,50 +7,121 @@ import { homeView, settingsView, creditsView } from './ui/home.js';
 import { profileView } from './ui/profile.js';
 import { adminView } from './ui/admin.js';
 import { createFlow } from './ui/create.js';
+import { socialView, userView } from './ui/social.js';
+import { postsView, postView } from './ui/posts.js';
+import { inboxView } from './ui/inbox.js';
+import { chatListView, chatView } from './ui/chat.js';
+import { badgeCounts } from './social.js';
 import { installTapSounds } from './sfx.js';
+import { App } from '@capacitor/app';
 
 const app = document.getElementById('app');
 let current = null; // the node of the screen on show, kept so we can dispose the editor
+let navEl = null;
+let activeTab = 'home';
+let badges = { friends: 0, requests: 0, unread: 0, messages: 0, hasInbox: false };
+let deepPost = null; // a shared post link waiting for the person to be signed in
 
-function mount(node, nav) {
-  if (current && current.dispose) current.dispose();
-  current = node;
-  app.replaceChildren(node, ...(nav ? [nav] : []));
-}
-
-function navBar(active, go) {
-  const items = [['home', 'home', 'Home'], ['profile', 'user', 'Profile']];
+function navBar(active) {
+  // Home Profile Social Post, then Chat (once you have a friend), Inbox (once something arrived), Admin (admins only)
+  const items = [['home', 'home', 'Home'], ['profile', 'user', 'Profile'], ['social', 'users', 'Social'], ['post', 'image', 'Post']];
+  if (badges.friends > 0) items.push(['chat', 'chat', 'Chat', badges.messages]);
+  if (badges.hasInbox) items.push(['inbox', 'bell', 'Inbox', badges.unread]);
   if (me.profile && me.profile.role === 'admin') items.push(['admin', 'shield', 'Admin']);
   const bar = h('nav', { class: 'nav', 'aria-label': 'เมนูหลัก' });
-  items.forEach(([id, ic, label]) => {
-    const b = h('button', { type: 'button', class: id === active ? 'on' : '' }, icon(ic), label);
+  items.forEach(([id, ic, label, n]) => {
+    const b = h('button', { type: 'button', class: id === active ? 'on' : '' }, h('span', { class: 'ic-wrap' }, icon(ic), n ? h('span', { class: 'badge' }, n > 99 ? '99+' : String(n)) : null), label);
     b.addEventListener('click', () => go(id));
     bar.append(b);
   });
   return bar;
 }
 
+function mount(node, active) {
+  if (current && current.dispose) current.dispose();
+  current = node;
+  activeTab = active || null;
+  navEl = active ? navBar(active) : null;
+  app.replaceChildren(node, ...(navEl ? [navEl] : []));
+}
+
+async function refreshBadges() {
+  if (!me.profile) return;
+  try {
+    badges = await badgeCounts();
+  } catch {
+    return;
+  }
+  if (navEl && activeTab) {
+    const fresh = navBar(activeTab);
+    navEl.replaceWith(fresh);
+    navEl = fresh;
+  }
+}
+
+function takeDeepLink() {
+  const m = (location.hash || '').match(/#\/post\/([0-9a-f-]{36})/i);
+  if (m) {
+    try {
+      history.replaceState(null, '', location.pathname + location.search);
+    } catch {
+      /* ignore */
+    }
+    deepPost = m[1];
+  }
+  const id = deepPost;
+  deepPost = null;
+  return id;
+}
+
 function go(route) {
-  if (!me.profile && route !== 'login') return go('login');
-  switch (route) {
+  if (!me.profile && route !== 'login') {
+    takeDeepLinkLater();
+    return go('login');
+  }
+  const [r, arg] = String(route).split(':');
+  refreshBadges();
+  switch (r) {
     case 'login':
       return mount(loginView(() => go('home')));
-    case 'home':
-      return mount(homeView(go), navBar('home', go));
+    case 'home': {
+      const d = takeDeepLink();
+      if (d) return go('postview:' + d);
+      return mount(homeView(go), 'home');
+    }
     case 'settings':
-      return mount(settingsView(go), navBar('home', go));
+      return mount(settingsView(go), 'home');
     case 'credits':
-      return mount(creditsView(go), navBar('home', go));
+      return mount(creditsView(go), 'home');
     case 'create':
       return mount(createFlow(() => go('home')));
     case 'profile':
-      return mount(profileView(go), navBar('profile', go));
+      return mount(profileView(go), 'profile');
+    case 'social':
+      return mount(socialView(go), 'social');
+    case 'user':
+      return mount(userView(go, arg), 'social');
+    case 'post':
+      return mount(postsView(go), 'post');
+    case 'posts':
+      return mount(postsView(go, { authorId: arg }), arg === me.user.id ? 'profile' : 'social');
+    case 'postview':
+      return mount(postView(go, arg), 'post');
+    case 'inbox':
+      return mount(inboxView(go, refreshBadges), 'inbox');
+    case 'chat':
+      return arg ? mount(chatView(go, arg, refreshBadges), 'chat') : mount(chatListView(go), 'chat');
     case 'admin':
       if (me.profile.role !== 'admin') return go('home');
-      return mount(adminView(), navBar('admin', go));
+      return mount(adminView(), 'admin');
     default:
       return go('home');
   }
+}
+
+function takeDeepLinkLater() {
+  const m = (location.hash || '').match(/#\/post\/([0-9a-f-]{36})/i);
+  if (m) deepPost = m[1];
 }
 
 async function boot() {
@@ -59,13 +130,30 @@ async function boot() {
     const p = await loadProfile();
     if (p) {
       startTracking();
+      setInterval(refreshBadges, 20000);
       return go('home');
     }
   } catch {
     /* offline or session expired: show login */
   }
+  takeDeepLinkLater();
   go('login');
 }
+
+// a shared post link opened while the app is running
+try {
+  App.addListener('appUrlOpen', ({ url }) => {
+    const m = String(url || '').match(/#\/post\/([0-9a-f-]{36})/i);
+    if (!m) return;
+    deepPost = m[1];
+    if (me.profile) go('home');
+  });
+} catch {
+  /* running in a browser */
+}
+window.addEventListener('hashchange', () => {
+  if (me.profile && /#\/post\//.test(location.hash)) go('home');
+});
 
 installTapSounds();
 boot();

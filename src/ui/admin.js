@@ -14,6 +14,7 @@ export function adminView() {
   root.append(wrap);
 
   const listBox = h('div', { class: 'list' });
+  const commentBox = h('div', { class: 'list' });
   const status = h('div', { class: 'muted small' });
 
   async function refresh() {
@@ -76,7 +77,33 @@ export function adminView() {
     h('div', { class: 'row' }, h('b', { class: 'grow' }, 'บัญชีทั้งหมด'), h('button', { class: 'btn sm', type: 'button', onclick: refresh }, 'รีเฟรช')),
     status,
     listBox,
+    h('div', { class: 'row' }, h('b', { class: 'grow' }, 'คอมเมนต์ล่าสุด (หลังบ้าน)'), h('button', { class: 'btn sm', type: 'button', onclick: loadComments }, 'รีเฟรช')),
+    commentBox,
   );
+
+  // ---- who commented what (raw text, not masked) ----
+  async function loadComments() {
+    const { data, error } = await sb
+      .from('comments')
+      .select('id,body,created_at,post_id,who:profiles!comments_author_fkey(username,display_name)')
+      .order('created_at', { ascending: false })
+      .limit(40);
+    if (error) return commentBox.replaceChildren(h('div', { class: 'err' }, 'โหลดไม่ได้: ' + error.message));
+    commentBox.replaceChildren(
+      ...(data.length
+        ? data.map((c) =>
+            h(
+              'div',
+              { class: 'li' },
+              h('b', {}, '@' + ((c.who && c.who.username) || '?')),
+              ' · ' + fmtDate(c.created_at),
+              h('div', {}, c.body),
+              h('button', { class: 'btn ghost sm', type: 'button', onclick: async () => { await sb.from('comments').delete().eq('id', c.id); loadComments(); } }, 'ลบ'),
+            ),
+          )
+        : [h('div', { class: 'muted small' }, 'ยังไม่มีคอมเมนต์')]),
+    );
+  }
 
   // ---- one account ----
   async function openUser(u) {
@@ -177,5 +204,6 @@ export function adminView() {
   }
 
   refresh();
+  loadComments();
   return root;
 }

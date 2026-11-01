@@ -68,13 +68,13 @@ const SOFT_CURVE = (() => {
 // It keeps very high volume settings loud without turning into crackle.
 export function makeLimiter(actx, dest) {
   const comp = actx.createDynamicsCompressor();
-  comp.threshold.value = -10;
+  comp.threshold.value = -4;
   comp.knee.value = 0;
   comp.ratio.value = 20;
   comp.attack.value = 0.003;
   comp.release.value = 0.12;
   const makeup = actx.createGain();
-  makeup.gain.value = 2.4;
+  makeup.gain.value = 1.0;
   const shaper = actx.createWaveShaper();
   shaper.curve = SOFT_CURVE;
   shaper.oversample = '2x';

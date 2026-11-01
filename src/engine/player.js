@@ -79,6 +79,38 @@ const videoOf = (p, c) => {
 };
 const clampSrc = (v, want) => (v.duration && want > v.duration - 0.05 ? Math.max(0, v.duration - 0.05) : want);
 
+// Seeks and waits until the picture for that time has really been shown. Waiting only for "seeked"
+// can leave the previous frame on screen, which made exported videos stutter.
+function seekExact(v, want) {
+  return new Promise((resolve) => {
+    let done = false;
+    let fallback = 0;
+    const fin = () => {
+      if (done) return;
+      done = true;
+      v.removeEventListener('seeked', onSeeked);
+      clearTimeout(timer);
+      clearTimeout(fallback);
+      resolve();
+    };
+    const timer = setTimeout(fin, 3000);
+    const onSeeked = () => {
+      if (!v.requestVideoFrameCallback) fallback = setTimeout(fin, 40);
+      else fallback = setTimeout(fin, 350); // no new frame was shown: the picture is already right
+    };
+    if (v.requestVideoFrameCallback) {
+      const onFrame = (_now, meta) => {
+        if (done) return;
+        if (Math.abs(meta.mediaTime - want) <= 0.05) fin();
+        else v.requestVideoFrameCallback(onFrame);
+      };
+      v.requestVideoFrameCallback(onFrame);
+    }
+    v.addEventListener('seeked', onSeeked);
+    v.currentTime = want;
+  });
+}
+
 // Moves the video of the clip at time t to the right frame and waits until it can be drawn.
 // Used before playing and for every frame of an export.
 export async function primeVideo(p, t, tol = 0.02) {
@@ -88,21 +120,7 @@ export async function primeVideo(p, t, tol = 0.02) {
   if (!v || !c) return;
   const want = clampSrc(v, srcTimeOf(c, Math.min(Math.max(t, c.start), c.start + c.dur)));
   if (!v.paused) v.pause();
-  if (Math.abs(v.currentTime - want) > tol || v.seeking) {
-    await new Promise((resolve) => {
-      let done = false;
-      const fin = () => {
-        if (done) return;
-        done = true;
-        v.removeEventListener('seeked', fin);
-        clearTimeout(timer);
-        resolve();
-      };
-      const timer = setTimeout(fin, 4000);
-      v.addEventListener('seeked', fin);
-      v.currentTime = want;
-    });
-  }
+  if (Math.abs(v.currentTime - want) > tol || v.seeking) await seekExact(v, want);
   if (v.readyState < 2) {
     await new Promise((resolve) => {
       const timer = setTimeout(resolve, 3000);

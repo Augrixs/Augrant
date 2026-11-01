@@ -1,5 +1,7 @@
 import { h, icon, toast, loadingOverlay, confirmSheet } from '../util.js';
-import { me, updateProfile, signOutNow } from '../supa.js';
+import { me, updateProfile, signOutNow, sb } from '../supa.js';
+import { avatar } from '../social.js';
+import { stat } from './social.js';
 
 // Resize the picked picture so the cover stays small enough to keep in the database.
 async function coverFromFile(file) {
@@ -18,6 +20,26 @@ async function coverFromFile(file) {
     const w = img.naturalWidth * sc;
     const hh = img.naturalHeight * sc;
     ctx.drawImage(img, (W - w) / 2, (H - hh) / 2, w, hh);
+    return c.toDataURL('image/jpeg', 0.8);
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
+
+async function avatarFromFile(file) {
+  const url = URL.createObjectURL(file);
+  try {
+    const img = new Image();
+    img.src = url;
+    await img.decode();
+    const S = 256;
+    const c = document.createElement('canvas');
+    c.width = S;
+    c.height = S;
+    const sc = Math.max(S / img.naturalWidth, S / img.naturalHeight);
+    const w = img.naturalWidth * sc;
+    const hh = img.naturalHeight * sc;
+    c.getContext('2d').drawImage(img, (S - w) / 2, (S - hh) / 2, w, hh);
     return c.toDataURL('image/jpeg', 0.8);
   } finally {
     URL.revokeObjectURL(url);
@@ -69,6 +91,41 @@ export function profileView(go) {
     }
   });
 
+  // round profile picture
+  const avWrap = h('div', { class: 'av-wrap' });
+  const paintAv = () => avWrap.replaceChildren(avatar(me.profile, 92));
+  paintAv();
+  const avPick = h('input', { type: 'file', accept: 'image/*', hidden: true });
+  avPick.addEventListener('change', async () => {
+    const f = avPick.files && avPick.files[0];
+    if (!f) return;
+    const ov = loadingOverlay('กำลังเปลี่ยนรูปโปรไฟล์...');
+    try {
+      await updateProfile({ avatar_data: await avatarFromFile(f) });
+      paintAv();
+      toast('เปลี่ยนรูปโปรไฟล์แล้ว');
+    } catch {
+      toast('เปลี่ยนรูปไม่สำเร็จ');
+    } finally {
+      ov.done();
+      avPick.value = '';
+    }
+  });
+  const stats = h('div', { class: 'stats' });
+  (async () => {
+    try {
+      const [posts, fr] = await Promise.all([
+        sb.from('posts').select('id,likes(count),comments(count)').eq('author', p.id),
+        sb.from('friendships').select('id', { count: 'exact', head: true }).eq('status', 'accepted').or(`requester.eq.${p.id},addressee.eq.${p.id}`),
+      ]);
+      const rows = posts.data || [];
+      const sum = (k) => rows.reduce((a, r) => a + ((r[k] && r[k][0] && r[k][0].count) || 0), 0);
+      stats.replaceChildren(stat(rows.length, 'โพสต์'), stat(fr.count || 0, 'เพื่อน'), stat(sum('likes'), 'ไลก์'), stat(sum('comments'), 'คอมเมนต์'));
+    } catch {
+      /* stats are optional */
+    }
+  })();
+
   return h(
     'div',
     { class: 'screen' },
@@ -76,7 +133,9 @@ export function profileView(go) {
     h(
       'div',
       { class: 'profile-card' },
-      h('div', {}, h('h2', {}, p.display_name || p.username), h('div', { class: 'muted' }, '@' + p.username, ' ', p.role === 'admin' ? h('span', { class: 'pill admin' }, 'admin') : null)),
+      h('div', { class: 'who' }, h('div', { class: 'av-col' }, avWrap, h('button', { class: 'btn ghost sm', type: 'button', onclick: () => avPick.click() }, 'เปลี่ยนรูป'), avPick), h('div', {}, h('h2', {}, p.display_name || p.username), h('div', { class: 'muted' }, '@' + p.username, ' ', p.role === 'admin' ? h('span', { class: 'pill admin' }, 'admin') : null))),
+      stats,
+      h('button', { class: 'btn', type: 'button', onclick: () => go('posts:' + p.id) }, 'โพสต์ของฉัน'),
       h('label', { class: 'field' }, 'Display name', dn),
       save,
       h(

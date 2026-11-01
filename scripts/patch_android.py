@@ -68,6 +68,22 @@ if 'READ_MEDIA_VIDEO' not in mf:
     mf = mf.replace('</manifest>', perms + '</manifest>', 1)
     write(mf_path, mf)
 
+# 3b) open shared post links (https://augrixs.github.io/Augrant/#/post/...) in the app
+mf = read(mf_path)
+if 'augrixs.github.io' not in mf:
+    flt = (
+        '        <intent-filter>\n'
+        '            <action android:name="android.intent.action.VIEW" />\n'
+        '            <category android:name="android.intent.category.DEFAULT" />\n'
+        '            <category android:name="android.intent.category.BROWSABLE" />\n'
+        '            <data android:scheme="https" android:host="augrixs.github.io" android:pathPrefix="/Augrant" />\n'
+        '        </intent-filter>\n'
+    )
+    if '</activity>' not in mf:
+        fail('AndroidManifest.xml has no </activity>')
+    mf = mf.replace('</activity>', flt + '    </activity>', 1)
+    write(mf_path, mf)
+
 # 4) gradle: fixed debug key (so new builds can update an installed app) and a rising versionCode
 gr_path = os.path.join(APP, 'build.gradle')
 gr = read(gr_path)

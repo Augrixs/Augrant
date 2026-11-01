@@ -37,7 +37,7 @@ async function loadAudioSrc(file) {
   } catch {
     throw new Error('เปิดไฟล์เสียงนี้ไม่ได้ ลองไฟล์ mp3, m4a, wav หรือ aac');
   }
-  return { id: uid('s'), kind: 'audio', name: file.name, buffer, dur: buffer.duration, norm: loudnessGain(buffer, 0.2, 30), peaks: peaksOf(buffer) };
+  return { id: uid('s'), kind: 'audio', name: file.name, buffer, dur: buffer.duration, norm: loudnessGain(buffer, 0.14, 30), peaks: peaksOf(buffer) };
 }
 
 async function loadVideoSrc(file) {
@@ -84,7 +84,7 @@ async function loadVideoSrc(file) {
   } catch {
     buffer = null; // the video has no usable sound track
   }
-  return { id: uid('s'), kind: 'video', name: file.name, url, el, dur: el.duration, buffer, norm: buffer ? loudnessGain(buffer, 0.12, 12) : 1 };
+  return { id: uid('s'), kind: 'video', name: file.name, url, el, dur: el.duration, buffer, norm: buffer ? loudnessGain(buffer, 0.05, 12) : 1 };
 }
 
 function releaseSource(s) {
