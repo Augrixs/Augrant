@@ -8,6 +8,7 @@ import { transcribe, LANGS } from '../engine/whisper.js';
 import { exportProject, QUALITIES, FORMATS } from '../engine/exporter.js';
 import { requestMedia, pickFolder, savedFolder, saveBlob, isNative, isIOS } from '../native.js';
 import { saveClip } from '../supa.js';
+import { putFile, getFile, getProject, putProject, fileKey, safeName } from '../projects.js';
 
 const COLORS = ['#FFD43B', '#4DF0B0', '#FF6B9A', '#62D9FF', '#FF8A3D', '#B28DFF', '#FFFFFF'];
 
@@ -30,17 +31,17 @@ function typedVideo(file) {
   return new Blob([file], { type: MIMES[ext] || 'video/mp4' });
 }
 
-async function loadAudioSrc(file) {
+async function loadAudioSrc(file, forcedId) {
   let buffer;
   try {
     buffer = await decodeFile(file);
   } catch {
     throw new Error('เปิดไฟล์เสียงนี้ไม่ได้ ลองไฟล์ mp3, m4a, wav หรือ aac');
   }
-  return { id: uid('s'), kind: 'audio', name: file.name, buffer, dur: buffer.duration, norm: loudnessGain(buffer, 0.14, 30), peaks: peaksOf(buffer) };
+  return { id: forcedId || uid('s'), file, saved: !!forcedId, kind: 'audio', name: file.name, buffer, dur: buffer.duration, norm: loudnessGain(buffer, 0.14, 30), peaks: peaksOf(buffer) };
 }
 
-async function loadVideoSrc(file) {
+async function loadVideoSrc(file, forcedId) {
   const typed = typedVideo(file);
   const url = URL.createObjectURL(typed);
   const el = document.createElement('video');
@@ -84,7 +85,7 @@ async function loadVideoSrc(file) {
   } catch {
     buffer = null; // the video has no usable sound track
   }
-  return { id: uid('s'), kind: 'video', name: file.name, url, el, dur: el.duration, buffer, norm: buffer ? loudnessGain(buffer, 0.05, 12) : 1 };
+  return { id: forcedId || uid('s'), file, saved: !!forcedId, kind: 'video', name: file.name, url, el, dur: el.duration, buffer, norm: buffer ? loudnessGain(buffer, 0.05, 12) : 1 };
 }
 
 function releaseSource(s) {
@@ -224,14 +225,17 @@ function stylePicker(p, onChange) {
 }
 
 /* ---------- the whole create flow ---------- */
-export function createFlow(onExit) {
+export function createFlow(onExit, openId) {
   const root = h('div', { class: 'screen' });
   const files = { audio: null, video: null };
   let project = null;
   let transport = null;
   let picker = null;
+  let saver = null;
 
   const cleanup = () => {
+    if (saver) clearInterval(saver);
+    saver = null;
     if (transport) transport.dispose();
     transport = null;
     if (picker) picker.dispose();
@@ -297,6 +301,7 @@ export function createFlow(onExit) {
       releaseAll(project);
       const s = loadSettings();
       project = {
+        id: uid('p'),
         title: audio.name.replace(/\.[^.]+$/, '') || 'Untitled',
         sources: { [audio.id]: audio, [video.id]: video },
         aClips: layout([{ id: uid(), src: audio.id, srcStart: 0, dur: audio.dur, speed: 1 }]),
@@ -369,6 +374,45 @@ export function createFlow(onExit) {
       onEnd: () => setPlayIcon(false),
     });
     transport.start();
+
+    /* ---- saving (automatic, on this phone) ---- */
+    const snapshot = () =>
+      JSON.stringify({
+        aClips: p.aClips,
+        vClips: p.vClips,
+        vol: p.vol,
+        style: p.style,
+        words: p.words,
+        texts: p.texts,
+        lang: p.lang || null,
+        srcs: Object.values(p.sources).map((s) => ({ id: s.id, kind: s.kind, name: s.name, dur: s.dur, norm: s.norm })),
+      });
+    let lastSnap = '';
+    let lastTitle = '';
+    let warned = false;
+    async function persist() {
+      const s = snapshot();
+      if (s === lastSnap && p.title === lastTitle) return;
+      try {
+        for (const src of Object.values(p.sources)) {
+          if (!src.saved && src.file) {
+            await putFile(fileKey(p.id, src.id), src.file);
+            src.saved = true;
+          }
+        }
+        const old = await getProject(p.id);
+        await putProject({ id: p.id, name: p.title, createdAt: old ? old.createdAt : Date.now(), updatedAt: Date.now(), trashedAt: old ? old.trashedAt : null, data: JSON.parse(s) });
+        lastSnap = s;
+        lastTitle = p.title;
+      } catch {
+        if (!warned) {
+          warned = true;
+          toast('บันทึกโปรเจกต์ไม่ได้ พื้นที่ในเครื่องอาจเต็ม', 4200);
+        }
+      }
+    }
+    saver = setInterval(persist, 4000);
+    persist();
 
     /* ---- timeline drawing ---- */
     function waveform(c) {
@@ -1088,7 +1132,7 @@ export function createFlow(onExit) {
           msg.textContent = 'กำลังบันทึกไฟล์...';
           const d = new Date();
           const pad = (n) => String(n).padStart(2, '0');
-          const name = `Augrant_${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}_${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}.${res.ext}`;
+          const name = `${safeName(p.title)}.${res.ext}`;
           const out = await saveBlob(folder, name, res.mime, res.blob, (x) => (barFill.style.width = Math.round(x * 100) + '%'));
           saveClip({ title: p.title, duration: duration(p), quality: fmt === 'mp3' ? 'audio' : quality, format: res.ext, transcript: p.words.map((w) => w.t).join(' ') }).catch(() => {});
           busy = false;
@@ -1113,10 +1157,23 @@ export function createFlow(onExit) {
     const back = h('button', { class: 'icon-btn', type: 'button', 'aria-label': 'กลับ' });
     back.innerHTML = ICON.back;
     back.addEventListener('click', async () => {
-      if (await confirmSheet('ออกจากหน้าตัดต่อ', 'งานที่ยังไม่ Export จะหายไป', 'ออก')) {
-        cleanup();
-        stepStyle();
-      }
+      transport.pause();
+      setPlayIcon(false);
+      await persist();
+      cleanup();
+      onExit();
+    });
+    const titleEl = h('h2', { class: 'tap-title', title: 'แตะเพื่อเปลี่ยนชื่อโปรเจกต์' }, p.title);
+    titleEl.addEventListener('click', () => {
+      const inp = h('input', { class: 'input', type: 'text', maxlength: 60, value: p.title });
+      const ok = h('button', { class: 'btn primary', type: 'button' }, 'บันทึกชื่อ');
+      const s = sheet('ชื่อโปรเจกต์ (ใช้เป็นชื่อไฟล์ตอน Export)', h('div', { class: 'stack' }, inp, ok));
+      ok.addEventListener('click', () => {
+        p.title = inp.value.trim().slice(0, 60) || p.title;
+        titleEl.textContent = p.title;
+        s.close();
+        persist();
+      });
     });
     const exp = h('button', { class: 'exp-btn', type: 'button' }, 'Export');
     exp.addEventListener('click', exportSheet);
@@ -1131,7 +1188,7 @@ export function createFlow(onExit) {
       h(
         'div',
         { class: 'editor' },
-        h('div', { class: 'topbar' }, back, h('h2', {}, p.title), exp),
+        h('div', { class: 'topbar' }, back, titleEl, exp),
         h('div', { class: 'preview' }, canvas),
         h('div', { class: 'transport' }, playBtn, timeLbl, zo, zi),
         tl,
@@ -1145,6 +1202,31 @@ export function createFlow(onExit) {
     primeVideo(p, 0).then(() => transport && transport.refresh());
   }
 
-  stepImport();
+  // open a project that was saved earlier
+  async function openSaved(id) {
+    const ov = loadingOverlay('กำลังเปิดโปรเจกต์...');
+    try {
+      const rec = await getProject(id);
+      if (!rec) throw new Error('ไม่พบโปรเจกต์นี้');
+      const d = rec.data;
+      const sources = {};
+      for (const m of d.srcs) {
+        const f = await getFile(fileKey(id, m.id));
+        if (!f) throw new Error('ไฟล์ของโปรเจกต์หายไป เปิดไม่ได้');
+        const file = f instanceof File ? f : new File([f], m.name, { type: f.type });
+        sources[m.id] = m.kind === 'video' ? await loadVideoSrc(file, m.id) : await loadAudioSrc(file, m.id);
+      }
+      project = { id, title: rec.name, sources, aClips: d.aClips, vClips: d.vClips, vol: d.vol, style: d.style, words: d.words || [], texts: d.texts || [], lang: d.lang || undefined, wordsVersion: 0 };
+      ov.done();
+      stepEditor();
+    } catch (e) {
+      ov.done();
+      toast(e.message || 'เปิดโปรเจกต์ไม่ได้', 5000);
+      onExit();
+    }
+  }
+
+  if (openId) openSaved(openId);
+  else stepImport();
   return root;
 }

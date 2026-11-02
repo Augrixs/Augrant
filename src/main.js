@@ -3,7 +3,7 @@ import './styles.css';
 import { h, icon } from './util.js';
 import { loadProfile, me, startTracking, handleAuthUrl } from './supa.js';
 import { loginView, setupView } from './ui/login.js';
-import { homeView, settingsView, creditsView } from './ui/home.js';
+import { homeView, settingsView, creditsView, trashView } from './ui/home.js';
 import { profileView } from './ui/profile.js';
 import { adminView } from './ui/admin.js';
 import { createFlow } from './ui/create.js';
@@ -96,7 +96,9 @@ function go(route) {
     case 'credits':
       return mount(creditsView(go), 'home');
     case 'create':
-      return mount(createFlow(() => go('home')));
+      return mount(createFlow(() => go('home'), arg));
+    case 'trash':
+      return mount(trashView(go), 'home');
     case 'profile':
       return mount(profileView(go), 'profile');
     case 'social':

@@ -253,3 +253,11 @@ textarea.input { resize: vertical; min-height: 90px; }
 .gear-btn .ic { width: 20px; height: 20px; }
 .home .logo { width: 96px; height: 96px; }
 .home .hello { font-size: 10px; }
+
+/* ---------- projects ---------- */
+.projects { width: 100%; max-width: 420px; display: flex; flex-direction: column; gap: 10px; margin-top: 8px; }
+.proj-title { font-family: var(--pixel); font-size: 11px; color: var(--blue-l); }
+.proj { display: flex; align-items: center; gap: 8px; background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 10px 6px 10px 14px; cursor: pointer; }
+.proj b { overflow-wrap: anywhere; }
+.dots { width: 40px; height: 40px; border: 0; background: transparent; font-size: 24px; font-weight: 700; border-radius: 50%; cursor: pointer; line-height: 1; }
+.tap-title { cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
