@@ -262,7 +262,7 @@ export function settingsView(go) {
         },
         'Log out',
       ),
-      h('p', { class: 'muted small' }, 'Augrant 1.1'),
+      h('p', { class: 'muted small' }, 'Augrant 1.1.1'),
       h('button', { class: 'mc-btn small', type: 'button', onclick: () => go('home') }, 'Done'),
     ),
   );
@@ -281,6 +281,7 @@ export function creditsView(go) {
       line('Idea', 'Augrixs'),
       line('Coding', 'Claude'),
       line('Augrant', 'โดย Augrixs Community'),
+      line(t('เขียนโค้ดแอป', 'App code'), 'Claude (AI) by Anthropic'),
       line('ถอดเสียง', 'Whisper (OpenAI) ผ่าน Transformers.js (Hugging Face)'),
       line('ฐานข้อมูลและบัญชี', 'Supabase'),
       line('แอปมือถือ', 'Capacitor'),
