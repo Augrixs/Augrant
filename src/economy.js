@@ -50,7 +50,7 @@ export async function loadEconomy() {
     sb.from('shop_items').select('*'),
     sb.from('inventory').select('*').eq('user_id', uid),
     sb.from('equipped').select('*').eq('user_id', uid),
-    sb.from('daily_claims').select('*').eq('user_id', uid).order('created_at', { ascending: false }).limit(3),
+    sb.from('daily_claims').select('*').eq('user_id', uid).order('claim_date', { ascending: false }).limit(3),
     sb.from('task_claims').select('task,day').eq('user_id', uid).eq('day', localDay()),
     sb.from('monthly_claims').select('month').eq('user_id', uid),
   ]);

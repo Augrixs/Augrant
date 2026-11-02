@@ -1,7 +1,7 @@
 import { h, icon, toast, t, confirmSheet, loadSettings } from '../util.js';
 import { me } from '../supa.js';
 import { avatar, nameOf } from '../social.js';
-import { LOOKS, SLOTS, TASKS, MONTHLY, loadEconomy, equippedOf, claimDaily, claimTask, claimMonthly, buyItem, buyBundle, equipItem, unequipSlot, dailyAmount, isoWeekday, clsOf } from '../economy.js';
+import { LOOKS, SLOTS, TASKS, MONTHLY, loadEconomy, equippedOf, claimDaily, claimTask, claimMonthly, buyItem, equipItem, unequipSlot, dailyAmount, isoWeekday, clsOf } from '../economy.js';
 
 export const gem = (size = 18) => h('span', { class: 'gem', style: { width: size + 'px', height: size + 'px' }, 'aria-hidden': 'true' });
 
@@ -105,7 +105,7 @@ export function shopView(go) {
         } else {
           btn = h('button', { class: 'btn sm primary', type: 'button' }, gem(14), String(it.price));
           btn.addEventListener('click', async () => {
-            if (await confirmSheet(t('ซื้อไอเทม', 'Buy item'), t(`ซื้อ ${look.th} ราคา ${it.price} Auru ?`, `Buy ${look.en} for ${it.price} Auru?`), t('ซื้อ', 'Buy'))) act(() => (look.own ? buyBundle(id) : buyItem(id)), () => t('ซื้อแล้ว', 'Purchased'));
+            if (await confirmSheet(t('ซื้อไอเทม', 'Buy item'), t(`ซื้อ ${look.th} ราคา ${it.price} Auru ?`, `Buy ${look.en} for ${it.price} Auru?`), t('ซื้อ', 'Buy'))) act(() => buyItem(id), () => t('ซื้อแล้ว', 'Purchased'));
           });
         }
         const left = !upcoming && it.endsAt && it.endsAt.getTime() > now ? it.endsAt : null;
