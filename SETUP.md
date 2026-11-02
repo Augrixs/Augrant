@@ -80,3 +80,18 @@ insert into public.profiles (id, username, display_name, role)
 Run `supabase/social.sql` once: Supabase > SQL Editor > New query > paste the whole file > Run.
 It adds friends, chat, posts, likes, comments, notifications and the `posts` storage bucket for pictures and videos.
 Without it the Social, Post, Inbox and Chat tabs show errors.
+
+## Version 1.1: sign up, Google, email codes
+
+1. Run `supabase/accounts.sql` in the SQL Editor (once).
+2. Supabase > Authentication > Sign In / Providers > Email: turn on, and turn on "Confirm email".
+   Turn OFF "Secure email change" (accounts made by the admin have no real email to confirm with).
+3. Authentication > Email Templates: in **Confirm signup**, **Magic Link** and **Change Email Address** put the
+   code in the message, for example:  `Your Augrant code: {{ .Token }}`
+4. Authentication > SMTP Settings: set your own SMTP (Brevo, Resend, Gmail app password...).
+   The built-in sender only allows a few emails per hour, so friends will not get their codes.
+5. Google: Google Cloud Console > APIs & Services > Credentials > OAuth client ID (Web application).
+   Authorized redirect URI: `https://rqnbkhgayhcxxvjkkwej.supabase.co/auth/v1/callback`.
+   Put the Client ID and Secret in Supabase > Authentication > Sign In / Providers > Google.
+6. Authentication > URL Configuration: Site URL `https://augrixs.github.io/Augrant/`;
+   Redirect URLs: add `https://augrixs.github.io/Augrant/` and `com.augrixs.augrant://auth`.

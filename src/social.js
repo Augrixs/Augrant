@@ -1,9 +1,11 @@
 // Data helpers and small widgets shared by Social, Post, Inbox and Chat.
 import { h } from './util.js';
 import { sb, me } from './supa.js';
+import { Browser } from '@capacitor/browser';
+import { PLATFORMS, normalizeLink } from './core/links.js';
 
 export const SHARE_BASE = 'https://augrixs.github.io/Augrant/';
-export const BASIC = 'id,username,display_name,role,avatar_data,created_at';
+export const BASIC = 'id,username,display_name,role,avatar_data,created_at,links';
 
 export const nameOf = (p) => (p && (p.display_name || p.username)) || '?';
 
@@ -108,4 +110,22 @@ export function viewCounts() {
 
 export function postLink(id) {
   return `${SHARE_BASE}#/post/${id}`;
+}
+
+export async function openLink(url) {
+  try {
+    await Browser.open({ url });
+  } catch {
+    window.open(url, '_blank', 'noopener');
+  }
+}
+
+// Row of buttons for the social links a person has saved (only links from the right site are shown)
+export function linkButtons(links) {
+  const row = h('div', { class: 'chips' });
+  for (const p of PLATFORMS) {
+    const url = links && normalizeLink(p.id, links[p.id]);
+    if (url) row.append(h('button', { class: 'chip', type: 'button', onclick: () => openLink(url) }, p.label));
+  }
+  return row.children.length ? row : null;
 }

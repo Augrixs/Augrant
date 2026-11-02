@@ -1,25 +1,90 @@
-import { h, loadSettings, saveSettings, toast, confirmSheet } from '../util.js';
-import { me, signOutNow } from '../supa.js';
+import { h, icon, loadSettings, saveSettings, toast, confirmSheet } from '../util.js';
+import { avatar } from '../social.js';
+import { me, signOutNow, hasRealEmail, startEmailChange, finishEmailChange } from '../supa.js';
 import { QUALITIES, FORMATS } from '../engine/exporter.js';
 import { MODELS, clearModelCache } from '../engine/whisper.js';
 import { setSfx } from '../sfx.js';
 import cover from '../assets/cover.png';
 
+function greeting() {
+  const hr = new Date().getHours(); // the phone's own clock, so it follows the country
+  if (hr >= 5 && hr < 12) return 'สวัสดีตอนเช้า';
+  if (hr >= 12 && hr < 17) return 'สวัสดีตอนบ่าย';
+  if (hr >= 17 && hr < 21) return 'สวัสดีตอนเย็น';
+  return 'สวัสดีตอนค่ำ';
+}
+
 export function homeView(go) {
   const name = (me.profile && (me.profile.display_name || me.profile.username)) || '';
+  const gear = h('button', { class: 'gear-btn', type: 'button', 'aria-label': 'Setting', onclick: () => go('settings') }, icon('gear'), h('span', {}, 'Setting'));
   return h(
     'div',
     { class: 'screen mc-bg home' },
+    h(
+      'div',
+      { class: 'home-top' },
+      h('button', { class: 'me-chip', type: 'button', onclick: () => go('profile') }, avatar(me.profile, 40), h('b', {}, name)),
+      gear,
+    ),
     h('img', { class: 'logo', src: cover, alt: 'Augrixs Community' }),
-    h('div', { class: 'hello' }, 'WELCOME', h('br'), name),
+    h('div', { class: 'hello' }, greeting(), h('br'), 'Welcome, ' + name),
     h(
       'div',
       { class: 'mc-menu' },
       h('button', { class: 'mc-btn', type: 'button', onclick: () => go('create') }, 'Create A Videos'),
-      h('button', { class: 'mc-btn', type: 'button', onclick: () => go('settings') }, 'Settings'),
       h('button', { class: 'mc-btn', type: 'button', onclick: () => go('credits') }, 'Credits'),
     ),
   );
+}
+
+// Link or change the account email. The new address must be confirmed with a 6-digit code.
+function emailBox() {
+  const status = h('div', { class: 'muted small' });
+  const box = h('div', { class: 'card stack' }, h('b', {}, 'อีเมลของบัญชี'), status);
+  const paint = () => {
+    status.textContent = hasRealEmail() ? 'อีเมลตอนนี้: ' + me.user.email : 'ยังไม่ได้เชื่อมอีเมล (Gmail, Hotmail หรืออื่นๆ) เชื่อมไว้เพื่อกู้บัญชีได้';
+  };
+  paint();
+  const email = h('input', { class: 'input', type: 'email', placeholder: 'อีเมลใหม่', autocapitalize: 'none', inputmode: 'email' });
+  const send = h('button', { class: 'btn', type: 'button' }, hasRealEmail() ? 'เปลี่ยนอีเมล (ส่งรหัส 6 ตัว)' : 'เชื่อมอีเมล (ส่งรหัส 6 ตัว)');
+  const code = h('input', { class: 'input', type: 'text', inputmode: 'numeric', maxlength: 6, placeholder: 'รหัส 6 ตัว', hidden: true });
+  const ok = h('button', { class: 'btn primary', type: 'button', hidden: true }, 'ยืนยันรหัส');
+  let pending = '';
+  send.addEventListener('click', async () => {
+    const v = email.value.trim();
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v)) return toast('อีเมลไม่ถูกต้อง');
+    send.disabled = true;
+    try {
+      await startEmailChange(v);
+      pending = v;
+      code.hidden = false;
+      ok.hidden = false;
+      toast('ส่งรหัส 6 ตัวไปที่ ' + v + ' แล้ว');
+    } catch (e) {
+      toast(e.message, 4200);
+    } finally {
+      send.disabled = false;
+    }
+  });
+  ok.addEventListener('click', async () => {
+    if (!/^\d{6}$/.test(code.value.trim())) return toast('ใส่เลข 6 ตัว');
+    ok.disabled = true;
+    try {
+      await finishEmailChange(pending, code.value);
+      toast('เชื่อมอีเมลแล้ว');
+      code.hidden = true;
+      ok.hidden = true;
+      email.value = '';
+      code.value = '';
+      paint();
+    } catch (e) {
+      toast(e.message, 4200);
+    } finally {
+      ok.disabled = false;
+    }
+  });
+  box.append(email, send, code, ok);
+  return box;
 }
 
 export function settingsView(go) {
@@ -50,6 +115,7 @@ export function settingsView(go) {
     h(
       'div',
       { class: 'pad stack' },
+      emailBox(),
       h('label', { class: 'field' }, 'ความละเอียดเริ่มต้นตอน Export', sel('q', QUALITIES.map((q) => [q.id, q.label]), s.quality, (v) => upd('quality', v))),
       h('label', { class: 'field' }, 'ชนิดไฟล์เริ่มต้น', sel('f', FORMATS.map((f) => [f.id, f.label]), s.format, (v) => upd('format', v))),
       h('label', { class: 'field' }, 'ความดังเสียงพูดเริ่มต้น (1-1000)', vol('vv', s.voiceVol, (n) => upd('voiceVol', n))),
@@ -97,7 +163,7 @@ export function settingsView(go) {
         },
         'Log out',
       ),
-      h('p', { class: 'muted small' }, 'Augrant 1.0'),
+      h('p', { class: 'muted small' }, 'Augrant 1.1'),
       h('button', { class: 'mc-btn small', type: 'button', onclick: () => go('home') }, 'Done'),
     ),
   );

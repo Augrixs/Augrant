@@ -1,5 +1,5 @@
 import { h, toast, sheet, fmtDate, ago, confirmSheet, loadingOverlay } from '../util.js';
-import { sb, adminCall, normUsername, validUsername, me } from '../supa.js';
+import { sb, adminCall, me } from '../supa.js';
 
 const ACTION_LABEL = {
   login: 'เข้าสู่ระบบ',
@@ -47,33 +47,8 @@ export function adminView() {
     );
   }
 
-  // ---- create account ----
-  const nu = h('input', { class: 'input', id: 'nu', type: 'text', placeholder: 'username (a-z 0-9 _ . -)', autocapitalize: 'none', spellcheck: 'false' });
-  const nd = h('input', { class: 'input', id: 'nd', type: 'text', placeholder: 'Display name' });
-  const np = h('input', { class: 'input', id: 'np', type: 'text', placeholder: 'รหัสผ่าน (อย่างน้อย 8 ตัว)', autocapitalize: 'none', spellcheck: 'false' });
-  const create = h('button', { class: 'btn primary', type: 'button' }, 'สร้างบัญชี');
-  create.addEventListener('click', async () => {
-    const u = normUsername(nu.value);
-    if (!validUsername(u)) return toast('username ใช้ a-z 0-9 _ . - ยาว 3-24 ตัว');
-    if (np.value.length < 8) return toast('รหัสผ่านอย่างน้อย 8 ตัว');
-    create.disabled = true;
-    try {
-      await adminCall('create_user', { username: u, password: np.value, display_name: nd.value.trim() || u });
-      toast('สร้างบัญชี @' + u + ' แล้ว');
-      nu.value = '';
-      nd.value = '';
-      np.value = '';
-      await refresh();
-    } catch (e) {
-      toast('สร้างไม่ได้: ' + e.message, 4200);
-    } finally {
-      create.disabled = false;
-    }
-  });
-
   wrap.append(
     h('h2', {}, 'Admin Panel Augrixs Rant'),
-    h('div', { class: 'card stack' }, h('b', {}, 'สร้างบัญชีให้เพื่อน'), nu, nd, np, create),
     h('div', { class: 'row' }, h('b', { class: 'grow' }, 'บัญชีทั้งหมด'), h('button', { class: 'btn sm', type: 'button', onclick: refresh }, 'รีเฟรช')),
     status,
     listBox,

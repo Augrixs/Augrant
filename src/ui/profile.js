@@ -2,6 +2,7 @@ import { h, icon, toast, loadingOverlay, confirmSheet } from '../util.js';
 import { me, updateProfile, signOutNow, sb } from '../supa.js';
 import { avatar } from '../social.js';
 import { stat } from './social.js';
+import { PLATFORMS, normalizeLink } from '../core/links.js';
 
 // Resize the picked picture so the cover stays small enough to keep in the database.
 async function coverFromFile(file) {
@@ -126,6 +127,31 @@ export function profileView(go) {
     }
   })();
 
+  // birthday, gender and social links
+  const bday = h('input', { class: 'input', type: 'date', value: p.birthday || '' });
+  const gSel = h('select', { class: 'input' }, [['', 'ไม่ระบุ'], ['male', 'ชาย'], ['female', 'หญิง']].map(([v, l]) => h('option', { value: v }, l)));
+  gSel.value = p.gender || '';
+  const linkInputs = PLATFORMS.map((pl) => ({ pl, el: h('input', { class: 'input', type: 'url', placeholder: pl.example, value: (p.links && p.links[pl.id]) || '', autocapitalize: 'none', spellcheck: 'false' }) }));
+  const saveInfo = h('button', { class: 'btn primary', type: 'button' }, 'บันทึกข้อมูลส่วนตัวและลิงก์');
+  saveInfo.addEventListener('click', async () => {
+    const links = {};
+    for (const { pl, el } of linkInputs) {
+      const v = normalizeLink(pl.id, el.value);
+      if (v === null) return toast(`ช่อง ${pl.label} ใส่ได้เฉพาะลิงก์ของ ${pl.label} เท่านั้น`, 4200);
+      if (v) links[pl.id] = v;
+    }
+    saveInfo.disabled = true;
+    try {
+      await updateProfile({ links, birthday: bday.value || null, gender: gSel.value || null });
+      toast('บันทึกแล้ว');
+    } catch {
+      toast('บันทึกไม่สำเร็จ ลองใหม่');
+    } finally {
+      saveInfo.disabled = false;
+    }
+  });
+  const info = h('div', { class: 'card stack' }, h('b', {}, 'ข้อมูลส่วนตัว (เห็นเฉพาะคุณ)'), h('label', { class: 'field' }, 'วันเกิด', bday), h('label', { class: 'field' }, 'เพศ', gSel), h('b', {}, 'ลิงก์โซเชียลของคุณ'), ...linkInputs.map(({ pl, el }) => h('label', { class: 'field' }, pl.label, el)), saveInfo);
+
   return h(
     'div',
     { class: 'screen' },
@@ -136,6 +162,7 @@ export function profileView(go) {
       h('div', { class: 'who' }, h('div', { class: 'av-col' }, avWrap, h('button', { class: 'btn ghost sm', type: 'button', onclick: () => avPick.click() }, 'เปลี่ยนรูป'), avPick), h('div', {}, h('h2', {}, p.display_name || p.username), h('div', { class: 'muted' }, '@' + p.username, ' ', p.role === 'admin' ? h('span', { class: 'pill admin' }, 'admin') : null))),
       stats,
       h('button', { class: 'btn', type: 'button', onclick: () => go('posts:' + p.id) }, 'โพสต์ของฉัน'),
+      info,
       h('label', { class: 'field' }, 'Display name', dn),
       save,
       h(

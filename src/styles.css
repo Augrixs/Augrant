@@ -233,3 +233,23 @@ textarea.input { resize: vertical; min-height: 90px; }
 .bubble.them { align-self: flex-start; background: var(--panel); border-bottom-left-radius: 6px; }
 .bubble .muted { color: #ffffffa0; }
 .chat-bar { display: flex; gap: 8px; padding: 8px 10px calc(8px + var(--safe-b)); border-top: 1px solid var(--line); background: var(--panel2); }
+
+/* ---------- sign in / sign up ---------- */
+.login > .link-btn, .link-btn { background: none; border: 0; color: var(--blue-l); padding: 10px; font-size: 14px; cursor: pointer; text-decoration: underline; }
+.step-title { font-size: 18px; margin: -8px 0 14px; }
+.google-btn { width: 100%; max-width: 360px; display: flex; align-items: center; justify-content: center; gap: 10px; background: #fff; color: #1f1f1f; border: 0; border-radius: 12px; padding: 13px; font-weight: 700; font-size: 16px; cursor: pointer; }
+.google-btn .g { width: 24px; height: 24px; border-radius: 50%; background: conic-gradient(#ea4335 0 25%, #fbbc05 0 50%, #34a853 0 75%, #4285f4 0); color: #fff; display: inline-flex; align-items: center; justify-content: center; font-weight: 800; font-size: 14px; }
+.or { width: 100%; max-width: 360px; display: flex; align-items: center; gap: 10px; color: var(--muted); margin: 14px 0; font-size: 13px; }
+.or::before, .or::after { content: ''; flex: 1; height: 1px; background: var(--line); }
+.code-input { text-align: center; letter-spacing: 10px; font-size: 24px; }
+.login form .field, .login form .chips { align-self: stretch; }
+
+/* ---------- home (1.1) ---------- */
+.home { padding-top: 0; }
+.home-top { width: 100%; display: flex; align-items: center; justify-content: space-between; padding: calc(10px + var(--safe-t)) 0 0; }
+.me-chip { display: flex; align-items: center; gap: 10px; background: #0007; border: 1px solid var(--line); border-radius: 99px; padding: 4px 14px 4px 4px; cursor: pointer; max-width: 60%; }
+.me-chip b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gear-btn { display: flex; align-items: center; gap: 6px; background: #0007; border: 1px solid var(--line); border-radius: 99px; padding: 8px 14px; cursor: pointer; font-size: 13px; }
+.gear-btn .ic { width: 20px; height: 20px; }
+.home .logo { width: 96px; height: 96px; }
+.home .hello { font-size: 10px; }

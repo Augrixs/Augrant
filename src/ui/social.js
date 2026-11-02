@@ -1,6 +1,6 @@
 import { h, icon, toast, ICON, confirmSheet, fmtDate } from '../util.js';
 import { me, sb } from '../supa.js';
-import { avatar, nameOf, listPeople, getProfile, friendshipWith, addFriend, acceptFriend, removeFriendship, noteView } from '../social.js';
+import { avatar, nameOf, linkButtons, listPeople, getProfile, friendshipWith, addFriend, acceptFriend, removeFriendship, noteView } from '../social.js';
 import { clean } from '../core/profanity.js';
 
 // Social tab: people you may know, with search.
@@ -85,6 +85,7 @@ export function userView(go, id) {
         cover,
         h('div', { class: 'who' }, avatar(p, 92), h('div', {}, h('h2', {}, clean(nameOf(p))), h('div', { class: 'muted' }, '@' + p.username, ' ', p.role === 'admin' ? h('span', { class: 'pill admin' }, 'admin') : null))),
         h('div', { class: 'muted small' }, 'สร้างบัญชีเมื่อ ' + fmtDate(p.created_at)),
+        linkButtons(p.links),
         h('div', { class: 'stats' }, stat(rows.length, 'โพสต์'), stat(friends.count || 0, 'เพื่อน'), stat(likes, 'ไลก์'), stat(comments, 'คอมเมนต์')),
         action,
         h('button', { class: 'btn', type: 'button', onclick: () => go('posts:' + id) }, 'ดูโพสต์ของ ' + clean(nameOf(p))),

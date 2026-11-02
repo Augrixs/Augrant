@@ -1,5 +1,11 @@
 import { createClient } from '@supabase/supabase-js';
 import { App } from '@capacitor/app';
+import { Capacitor } from '@capacitor/core';
+import { Browser } from '@capacitor/browser';
+
+const isAppNative = Capacitor.isNativePlatform();
+const WEB_HOME = 'https://augrixs.github.io/Augrant/';
+const APP_SCHEME = 'com.augrixs.augrant://auth';
 
 export const SUPABASE_URL = 'https://rqnbkhgayhcxxvjkkwej.supabase.co';
 // Publishable key: safe to ship in the app. Data is protected by the row level rules in supabase/setup.sql.
@@ -7,7 +13,7 @@ export const SUPABASE_KEY = 'sb_publishable_DK8nP_2X1Tz0UoDxp4GkqA_xVb8ktpk';
 const EMAIL_DOMAIN = 'augrant.app';
 
 export const sb = createClient(SUPABASE_URL, SUPABASE_KEY, {
-  auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false },
+  auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: !isAppNative },
 });
 
 export const normUsername = (u) => String(u || '').trim().toLowerCase();
@@ -21,29 +27,121 @@ export async function loadProfile() {
   if (!s.session) return null;
   const { data, error } = await sb.from('profiles').select('*').eq('id', s.session.user.id).maybeSingle();
   if (error) throw error;
-  if (!data) {
-    await sb.auth.signOut();
-    return null;
-  }
   me.user = s.session.user;
-  me.profile = data;
-  return data;
+  me.profile = data || null; // no row yet = signed up but still has to pick a username
+  return data || null;
 }
 
-export async function signIn(username, password) {
-  const u = normUsername(username);
-  const { error } = await sb.auth.signInWithPassword({ email: emailOf(u), password });
+// `who` is a username or an email address.
+export async function signIn(who, password) {
+  const id = String(who || '').trim();
+  let email = id.includes('@') ? id.toLowerCase() : emailOf(id);
+  if (!id.includes('@')) {
+    try {
+      const { data } = await sb.rpc('login_email', { p_username: normUsername(id) });
+      if (data) email = data;
+    } catch {
+      /* the plain username email is used */
+    }
+  }
+  const { error } = await sb.auth.signInWithPassword({ email, password });
   if (error) {
     const msg = String(error.message || '');
-    if (/invalid login|invalid credentials/i.test(msg)) throw new Error('Username หรือรหัสผ่านไม่ถูกต้อง');
+    if (/invalid login|invalid credentials/i.test(msg)) throw new Error('Username/อีเมล หรือรหัสผ่านไม่ถูกต้อง');
     throw new Error('เชื่อมต่อไม่ได้ ตรวจอินเทอร์เน็ตแล้วลองใหม่');
   }
   const p = await loadProfile();
-  if (!p) throw new Error('บัญชีนี้ยังไม่ได้ตั้งค่า ติดต่อแอดมิน');
+  if (!p) return null; // still needs a username: the app opens the setup page
   await logActivity('login', {});
   await startTracking();
   return p;
 }
+
+// ---- sign up with an emailed 6-digit code ----
+const niceAuthError = (e) => {
+  const m = String((e && e.message) || e || '');
+  if (/rate limit|too many|seconds/i.test(m)) return 'ขอรหัสถี่เกินไป รอสักครู่แล้วลองใหม่';
+  if (/expired|invalid/i.test(m)) return 'รหัสไม่ถูกต้องหรือหมดอายุ';
+  if (/valid email|invalid format/i.test(m)) return 'อีเมลไม่ถูกต้อง';
+  return m || 'ทำไม่สำเร็จ';
+};
+
+export async function sendEmailCode(email) {
+  const { error } = await sb.auth.signInWithOtp({ email: email.trim().toLowerCase(), options: { shouldCreateUser: true } });
+  if (error) throw new Error(niceAuthError(error));
+}
+
+export async function verifyEmailCode(email, code) {
+  const { error } = await sb.auth.verifyOtp({ email: email.trim().toLowerCase(), token: String(code).trim(), type: 'email' });
+  if (error) throw new Error(niceAuthError(error));
+  return loadProfile();
+}
+
+export async function usernameFree(u) {
+  const { data, error } = await sb.rpc('username_free', { p_username: normUsername(u) });
+  if (error) throw error;
+  return !!data;
+}
+
+// Last step of sign-up: password, unique username, optional birthday and gender.
+export async function finishSignUp({ username, password, birthday, gender }) {
+  const u = normUsername(username);
+  if (!validUsername(u)) throw new Error('Username ใช้ a-z 0-9 _ . - ยาว 3-24 ตัว');
+  if (!(await usernameFree(u))) throw new Error('Username นี้มีคนใช้แล้ว');
+  if (password) {
+    const { error: pe } = await sb.auth.updateUser({ password });
+    if (pe) throw new Error(niceAuthError(pe));
+  }
+  const row = { id: me.user.id, username: u, display_name: u };
+  if (birthday) row.birthday = birthday;
+  if (gender === 'male' || gender === 'female') row.gender = gender;
+  const { error } = await sb.from('profiles').insert(row);
+  if (error) throw new Error(/duplicate|unique/i.test(error.message) ? 'Username นี้มีคนใช้แล้ว' : error.message);
+  await loadProfile();
+  await logActivity('login', {});
+  await startTracking();
+  return me.profile;
+}
+
+// Google. On the phone app the browser comes back through the com.augrixs.augrant:// link.
+export async function googleSignIn() {
+  const { data, error } = await sb.auth.signInWithOAuth({
+    provider: 'google',
+    options: { redirectTo: isAppNative ? APP_SCHEME : WEB_HOME, skipBrowserRedirect: isAppNative },
+  });
+  if (error) throw new Error(error.message);
+  if (isAppNative && data && data.url) await Browser.open({ url: data.url });
+}
+
+// Reads the tokens Supabase puts on the link after Google sign-in.
+export async function handleAuthUrl(url) {
+  const u = String(url || '');
+  if (!u.startsWith(APP_SCHEME)) return false;
+  const q = new URLSearchParams(u.split('#')[1] || u.split('?')[1] || '');
+  const at = q.get('access_token');
+  const rt = q.get('refresh_token');
+  try {
+    await Browser.close();
+  } catch {
+    /* already closed */
+  }
+  if (!at || !rt) return false;
+  const { error } = await sb.auth.setSession({ access_token: at, refresh_token: rt });
+  return !error;
+}
+
+// Settings: link or change the email of an existing account (needs the 6-digit code)
+export async function startEmailChange(email) {
+  const { error } = await sb.auth.updateUser({ email: email.trim().toLowerCase() });
+  if (error) throw new Error(niceAuthError(error));
+}
+export async function finishEmailChange(email, code) {
+  const { error } = await sb.auth.verifyOtp({ email: email.trim().toLowerCase(), token: String(code).trim(), type: 'email_change' });
+  if (error) throw new Error(niceAuthError(error));
+  const { data } = await sb.auth.getUser();
+  if (data && data.user) me.user = data.user;
+}
+export const hasRealEmail = () => !!(me.user && me.user.email && !me.user.email.endsWith('@' + EMAIL_DOMAIN));
 
 export async function signOutNow() {
   try {

@@ -78,6 +78,12 @@ if 'augrixs.github.io' not in mf:
         '            <category android:name="android.intent.category.BROWSABLE" />\n'
         '            <data android:scheme="https" android:host="augrixs.github.io" android:pathPrefix="/Augrant" />\n'
         '        </intent-filter>\n'
+        '        <intent-filter>\n'
+        '            <action android:name="android.intent.action.VIEW" />\n'
+        '            <category android:name="android.intent.category.DEFAULT" />\n'
+        '            <category android:name="android.intent.category.BROWSABLE" />\n'
+        '            <data android:scheme="com.augrixs.augrant" android:host="auth" />\n'
+        '        </intent-filter>\n'
     )
     if '</activity>' not in mf:
         fail('AndroidManifest.xml has no </activity>')
@@ -109,6 +115,7 @@ if not run.isdigit():
 gr, n = re.subn(r'versionCode\s+\d+', 'versionCode ' + run, gr, count=1)
 if n != 1:
     fail('could not find versionCode in app/build.gradle')
+gr = re.sub(r'versionName\s+"[^"]*"', 'versionName "1.1"', gr, count=1)
 write(gr_path, gr)
 
 print('Android project patched. versionCode =', run)

@@ -13,3 +13,15 @@ test('normal words are left alone', () => {
   assert.equal(clean(''), '');
   assert.equal(clean(null), '');
 });
+
+import { normalizeLink } from '../src/core/links.js';
+
+test('social links accept only their own site', () => {
+  assert.equal(normalizeLink('youtube', 'youtube.com/@abc'), 'https://youtube.com/@abc');
+  assert.equal(normalizeLink('youtube', 'https://youtu.be/xyz'), 'https://youtu.be/xyz');
+  assert.equal(normalizeLink('youtube', 'https://tiktok.com/@abc'), null);
+  assert.equal(normalizeLink('x', 'https://evil.com/x.com'), null);
+  assert.equal(normalizeLink('x', 'https://x.com.evil.com/a'), null);
+  assert.equal(normalizeLink('discord', 'javascript:alert(1)'), null);
+  assert.equal(normalizeLink('tiktok', ''), '');
+});

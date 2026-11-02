@@ -1,8 +1,8 @@
 import './fonts.js';
 import './styles.css';
 import { h, icon } from './util.js';
-import { loadProfile, me, startTracking } from './supa.js';
-import { loginView } from './ui/login.js';
+import { loadProfile, me, startTracking, handleAuthUrl } from './supa.js';
+import { loginView, setupView } from './ui/login.js';
 import { homeView, settingsView, creditsView } from './ui/home.js';
 import { profileView } from './ui/profile.js';
 import { adminView } from './ui/admin.js';
@@ -75,15 +75,17 @@ function takeDeepLink() {
 }
 
 function go(route) {
-  if (!me.profile && route !== 'login') {
+  if (!me.profile && route !== 'login' && route !== 'setup') {
     takeDeepLinkLater();
-    return go('login');
+    return go(me.user ? 'setup' : 'login');
   }
   const [r, arg] = String(route).split(':');
   refreshBadges();
   switch (r) {
     case 'login':
-      return mount(loginView(() => go('home')));
+      return mount(loginView(go));
+    case 'setup':
+      return mount(setupView(go));
     case 'home': {
       const d = takeDeepLink();
       if (d) return go('postview:' + d);
@@ -133,6 +135,7 @@ async function boot() {
       setInterval(refreshBadges, 20000);
       return go('home');
     }
+    if (me.user) return go('setup'); // signed up but no username yet
   } catch {
     /* offline or session expired: show login */
   }
@@ -142,7 +145,12 @@ async function boot() {
 
 // a shared post link opened while the app is running
 try {
-  App.addListener('appUrlOpen', ({ url }) => {
+  App.addListener('appUrlOpen', async ({ url }) => {
+    if (await handleAuthUrl(url)) {
+      const p = await loadProfile();
+      if (p) startTracking();
+      return go(p ? 'home' : 'setup');
+    }
     const m = String(url || '').match(/#\/post\/([0-9a-f-]{36})/i);
     if (!m) return;
     deepPost = m[1];

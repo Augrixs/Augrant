@@ -18,23 +18,45 @@ const mediaUrl = (path) => sb.storage.from('posts').getPublicUrl(path).data.publ
 const countOf = (rel) => (rel && rel[0] && rel[0].count) || 0;
 const bgCss = (i) => (i != null && BGS[Number(i)] ? `linear-gradient(135deg, ${BGS[Number(i)][0]}, ${BGS[Number(i)][1]})` : '');
 
+// Shrinks a picture to at most 1280 px. Some file managers hand over pictures the <img> tag cannot read,
+// so createImageBitmap is tried first, then <img>; if both fail the original file is uploaded as it is.
 async function shrinkImage(file) {
-  const url = URL.createObjectURL(file);
+  const max = 1280;
+  let src;
+  let w;
+  let hgt;
+  let close = () => {};
   try {
+    const bmp = await createImageBitmap(file);
+    src = bmp;
+    w = bmp.width;
+    hgt = bmp.height;
+    close = () => bmp.close && bmp.close();
+  } catch {
+    const url = URL.createObjectURL(file);
     const img = new Image();
     img.src = url;
-    await img.decode();
-    const max = 1280;
-    const sc = Math.min(1, max / Math.max(img.naturalWidth, img.naturalHeight));
+    try {
+      await img.decode();
+    } catch {
+      URL.revokeObjectURL(url);
+      return file;
+    }
+    src = img;
+    w = img.naturalWidth;
+    hgt = img.naturalHeight;
+    close = () => URL.revokeObjectURL(url);
+  }
+  try {
+    const sc = Math.min(1, max / Math.max(w, hgt));
     const c = document.createElement('canvas');
-    c.width = Math.round(img.naturalWidth * sc);
-    c.height = Math.round(img.naturalHeight * sc);
-    c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+    c.width = Math.round(w * sc);
+    c.height = Math.round(hgt * sc);
+    c.getContext('2d').drawImage(src, 0, 0, c.width, c.height);
     const blob = await new Promise((res) => c.toBlob(res, 'image/jpeg', 0.8));
-    if (!blob) throw new Error('บีบอัดรูปไม่ได้');
-    return blob;
+    return blob || file;
   } finally {
-    URL.revokeObjectURL(url);
+    close();
   }
 }
 
@@ -234,9 +256,10 @@ function composeSheet(onPosted) {
       let path = null;
       if (file) {
         const blob = kind === 'image' ? await shrinkImage(file) : file;
-        const ext = kind === 'image' ? 'jpg' : (file.name.split('.').pop() || 'mp4').toLowerCase().replace(/[^a-z0-9]/g, '') || 'mp4';
+        const shrunk = kind === 'image' && blob !== file;
+        const ext = shrunk ? 'jpg' : (file.name.split('.').pop() || (kind === 'image' ? 'jpg' : 'mp4')).toLowerCase().replace(/[^a-z0-9]/g, '') || (kind === 'image' ? 'jpg' : 'mp4');
         path = `${me.user.id}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
-        const { error: ue } = await sb.storage.from('posts').upload(path, blob, { contentType: kind === 'image' ? 'image/jpeg' : file.type || 'video/mp4', upsert: false });
+        const { error: ue } = await sb.storage.from('posts').upload(path, blob, { contentType: shrunk ? 'image/jpeg' : file.type || (kind === 'image' ? 'image/' + (ext === 'jpg' ? 'jpeg' : ext) : 'video/mp4'), upsert: false });
         if (ue) throw ue;
       }
       const { error } = await sb.from('posts').insert({ author: me.user.id, kind: file ? kind : 'text', body, bg: file || bg == null ? null : String(bg), media_path: path });
