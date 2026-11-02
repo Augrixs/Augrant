@@ -1,7 +1,7 @@
 import { h, icon, toast, t, confirmSheet, loadSettings } from '../util.js';
 import { me } from '../supa.js';
 import { avatar, nameOf } from '../social.js';
-import { LOOKS, SLOTS, TASKS, MONTHLY, loadEconomy, equippedOf, claimDaily, claimTask, claimMonthly, buyItem, equipItem, unequipSlot, dailyAmount, isoWeekday, clsOf } from '../economy.js';
+import { LOOKS, SLOTS, TASKS, MONTHLY, loadEconomy, equippedOf, claimDaily, claimTask, claimMonthly, buyItem, buyBundle, equipItem, unequipSlot, dailyAmount, isoWeekday, clsOf } from '../economy.js';
 
 export const gem = (size = 18) => h('span', { class: 'gem', style: { width: size + 'px', height: size + 'px' }, 'aria-hidden': 'true' });
 
@@ -82,10 +82,10 @@ export function shopView(go) {
     const byId = Object.fromEntries(st.items.map((i) => [i.id, i]));
     const now = Date.now();
     const cards = Object.keys(LOOKS)
-      .filter((id) => byId[id])
+      .filter((id) => byId[id] || LOOKS[id].own)
       .map((id) => {
         const look = LOOKS[id];
-        const it = byId[id];
+        const it = byId[id] || { price: look.price };
         const isBundle = look.slot === 'bundle';
         const owned = isBundle ? look.contains.every((c) => st.owned.has(c)) : st.owned.has(id);
         const upcoming = it.startsAt && it.startsAt.getTime() > now;
@@ -93,7 +93,7 @@ export function shopView(go) {
         const eqNow = !isBundle && st.equipped[look.slot] === id;
         const sum = isBundle ? look.contains.reduce((a, c) => a + ((byId[c] && byId[c].price) || 0), 0) : 0;
         const art = isBundle
-          ? h('div', { class: 'art bundle' }, h('span', { class: 'pumpbig' }, '🎃'), h('small', {}, '-' + (sum ? Math.round((1 - it.price / sum) * 100) : 30) + '%'))
+          ? h('div', { class: 'art bundle' + (look.own ? ' ' + id : '') }, h('span', { class: 'pumpbig' }, look.own ? '' : '🎃'), look.own ? framedAvatar(me.profile, 52, look.contains[0]) : null, h('small', {}, '-' + (sum ? Math.round((1 - it.price / sum) * 100) : 30) + '%'))
           : h('div', { class: 'art ' + (look.cls || '') }, look.slot === 'frame' ? framedAvatar(me.profile, 56, id) : look.slot === 'name_style' ? styledName(me.profile, id) : null);
         let btn;
         if (upcoming) btn = h('button', { class: 'btn sm', type: 'button', disabled: true }, h('span', { class: 'cd', 'data-at': it.startsAt.getTime() }, countdown(it.startsAt)));
@@ -105,7 +105,7 @@ export function shopView(go) {
         } else {
           btn = h('button', { class: 'btn sm primary', type: 'button' }, gem(14), String(it.price));
           btn.addEventListener('click', async () => {
-            if (await confirmSheet(t('ซื้อไอเทม', 'Buy item'), t(`ซื้อ ${look.th} ราคา ${it.price} Auru ?`, `Buy ${look.en} for ${it.price} Auru?`), t('ซื้อ', 'Buy'))) act(() => buyItem(id), () => t('ซื้อแล้ว', 'Purchased'));
+            if (await confirmSheet(t('ซื้อไอเทม', 'Buy item'), t(`ซื้อ ${look.th} ราคา ${it.price} Auru ?`, `Buy ${look.en} for ${it.price} Auru?`), t('ซื้อ', 'Buy'))) act(() => (look.own ? buyBundle(id) : buyItem(id)), () => t('ซื้อแล้ว', 'Purchased'));
           });
         }
         const note = isBundle ? t(`รวม 3 ชิ้น (แยกซื้อ ${sum})`, `3 items (${sum} separately)`) : '';

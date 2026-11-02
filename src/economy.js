@@ -7,6 +7,20 @@ export const LOOKS = {
   halloween_frame: { slot: 'frame', th: 'กรอบฟักทองเรืองแสง', en: 'Glowing Pumpkin Frame', cls: 'fr-pumpkin' },
   halloween_name: { slot: 'name_style', th: 'ชื่อส้มเรืองแสงลายฮาโลวีน', en: 'Halloween Glow Name', cls: 'nm-pumpkin' },
   halloween_bg: { slot: 'background', th: 'พื้นหลังโปรไฟล์ส้มฮาโลวีน', en: 'Halloween Profile Background', cls: 'bg-pumpkin' },
+  frame_blue: { slot: 'frame', th: 'กรอบน้ำเงิน', en: 'Blue Frame', cls: 'fr-blue' },
+  frame_sky: { slot: 'frame', th: 'กรอบฟ้าอ่อน', en: 'Sky Frame', cls: 'fr-sky' },
+  frame_gold: { slot: 'frame', th: 'กรอบทอง', en: 'Gold Frame', cls: 'fr-gold' },
+  frame_neon: { slot: 'frame', th: 'กรอบนีออน', en: 'Neon Frame', cls: 'fr-neon' },
+  frame_rainbow: { slot: 'frame', th: 'กรอบสายรุ้ง', en: 'Rainbow Frame', cls: 'fr-rainbow' },
+  name_blue: { slot: 'name_style', th: 'ชื่อสีน้ำเงิน', en: 'Blue Name', cls: 'nm-blue' },
+  name_sky: { slot: 'name_style', th: 'ชื่อฟ้าอ่อนเรืองแสง', en: 'Sky Glow Name', cls: 'nm-sky' },
+  name_gold: { slot: 'name_style', th: 'ชื่อทองเรืองแสง', en: 'Gold Glow Name', cls: 'nm-gold' },
+  name_rainbow: { slot: 'name_style', th: 'ชื่อสายรุ้ง', en: 'Rainbow Name', cls: 'nm-rainbow' },
+  bg_blue: { slot: 'background', th: 'พื้นหลังน้ำเงิน', en: 'Blue Background', cls: 'bg-blue' },
+  bg_sky: { slot: 'background', th: 'พื้นหลังฟ้าอ่อน', en: 'Sky Background', cls: 'bg-sky' },
+  bg_aurora: { slot: 'background', th: 'พื้นหลังออโรรา', en: 'Aurora Background', cls: 'bg-aurora' },
+  blue_bundle: { slot: 'bundle', th: 'Blue Bundle (ขายตลอด)', en: 'Blue Bundle (always on sale)', contains: ['frame_blue', 'name_sky', 'bg_blue'], price: 440, own: true },
+  rainbow_bundle: { slot: 'bundle', th: 'Rainbow Bundle (ขายตลอด)', en: 'Rainbow Bundle (always on sale)', contains: ['frame_rainbow', 'name_rainbow', 'bg_aurora'], price: 800, own: true },
   halloween_bundle: { slot: 'bundle', th: 'Halloween Bundle', en: 'Halloween Bundle', contains: ['halloween_frame', 'halloween_name', 'halloween_bg'] },
 };
 export const SLOTS = ['frame', 'name_style', 'background'];
@@ -75,6 +89,7 @@ const call = async (fn, args) => {
 export const claimDaily = () => call('claim_daily', { p_tz_offset_min: tzOffset() });
 export const claimTask = (id) => call('claim_task', { p_task: id, p_tz_offset_min: tzOffset() });
 export const claimMonthly = () => call('claim_monthly', { p_tz_offset_min: tzOffset() });
+export const buyBundle = (id) => call('buy_bundle', { p_bundle: id });
 export const buyItem = (id) => call('buy_item', { p_item: id });
 export const equipItem = (id) => call('equip_item', { p_item: id });
 export const unequipSlot = (slot) => call('unequip_slot', { p_slot: slot });

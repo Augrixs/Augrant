@@ -289,3 +289,21 @@ textarea.input { resize: vertical; min-height: 90px; }
 .preview { display: flex; align-items: center; gap: 14px; padding: 16px; border-radius: 16px; border: 1px solid var(--line); background: var(--panel); font-size: 20px; }
 .bg-pumpkin { background: linear-gradient(135deg, #3a1500, #ff7a00 60%, #ffb347) !important; }
 .me-chip .framed + b, .me-chip .sname { margin-left: 6px; }
+
+/* blue / sky / rainbow cosmetics (the app's own colours are blue and light blue) */
+.framed[class*="fr-"]:not(.fr-pumpkin)::before { content: ''; position: absolute; inset: -4px; border-radius: 50%; -webkit-mask: radial-gradient(circle, transparent 62%, #000 64%); mask: radial-gradient(circle, transparent 62%, #000 64%); }
+.fr-blue::before { background: conic-gradient(#1a3fa8, #2f6bff, #6ea0ff, #2f6bff, #1a3fa8); filter: drop-shadow(0 0 7px #2f6bff); animation: spin 5s linear infinite; }
+.fr-sky::before { background: conic-gradient(#9fe3ff, #e8fbff, #6ec6ff, #e8fbff, #9fe3ff); filter: drop-shadow(0 0 8px #8fdcff); animation: spin 4s linear infinite; }
+.fr-gold::before { background: conic-gradient(#8a5a00, #ffd24a, #fff3b0, #ffd24a, #8a5a00); filter: drop-shadow(0 0 8px #ffc400); animation: spin 4s linear infinite; }
+.fr-neon::before { background: conic-gradient(#ff2fd0, #2ff8ff, #7a2fff, #ff2fd0); filter: drop-shadow(0 0 9px #2ff8ff); animation: spin 2.5s linear infinite; }
+.fr-rainbow::before { background: conic-gradient(red, orange, yellow, lime, cyan, blue, magenta, red); filter: drop-shadow(0 0 7px #fff8); animation: spin 3s linear infinite; }
+.sname.nm-blue { color: #4d86ff; font-weight: 700; }
+.sname.nm-sky { color: #bfefff; font-weight: 700; text-shadow: 0 0 8px #6ec6ff, 0 0 16px #6ec6ff; }
+.sname.nm-gold { color: #ffd24a; font-weight: 800; text-shadow: 0 0 8px #ffb000, 0 0 16px #ffb000; }
+.sname.nm-rainbow { font-weight: 800; background: linear-gradient(90deg, red, orange, yellow, lime, cyan, blue, magenta, red); background-size: 200% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; -webkit-text-fill-color: transparent; animation: slide 3s linear infinite; }
+@keyframes slide { to { background-position: 200% 0; } }
+.bg-blue { background: linear-gradient(135deg, #0b1f66, #2f6bff) !important; }
+.bg-sky { background: linear-gradient(135deg, #3aa0e8, #d8f6ff) !important; }
+.bg-aurora { background: linear-gradient(120deg, #0b1f66, #2f6bff, #6ec6ff, #7a2fff, #ff2fd0) !important; background-size: 300% 300% !important; animation: slide 8s linear infinite alternate; }
+.art.bundle.blue_bundle { background: radial-gradient(circle, #2f6bff55, transparent 70%); }
+.art.bundle.rainbow_bundle { background: radial-gradient(circle, #ff2fd055, #2ff8ff33 50%, transparent 72%); }

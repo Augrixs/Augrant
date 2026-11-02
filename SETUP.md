@@ -99,3 +99,4 @@ Without it the Social, Post, Inbox and Chat tabs show errors.
 ## Update 1.1 - Auru, Shop, tasks
 1. Run `supabase/economy_extras.sql` in the Supabase SQL Editor (adds daily tasks + monthly claim).
 2. The Auru tables/functions (claim_daily, buy_item, equip_item, unequip_slot) must already exist.
+3. Run `supabase/shop_blue.sql` (blue/sky/rainbow frames, names, backgrounds + permanent Blue and Rainbow bundles).
