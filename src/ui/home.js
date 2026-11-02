@@ -277,6 +277,9 @@ export function creditsView(go) {
     h(
       'div',
       { class: 'pad stack' },
+      line('Owner', 'Augrixs'),
+      line('Idea', 'Augrixs'),
+      line('Coding', 'Claude'),
       line('Augrant', 'โดย Augrixs Community'),
       line('ถอดเสียง', 'Whisper (OpenAI) ผ่าน Transformers.js (Hugging Face)'),
       line('ฐานข้อมูลและบัญชี', 'Supabase'),
