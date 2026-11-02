@@ -1,7 +1,7 @@
 import { h, icon, toast, t, confirmSheet, loadSettings } from '../util.js';
 import { me } from '../supa.js';
 import { avatar, nameOf } from '../social.js';
-import { LOOKS, SLOTS, TASKS, MONTHLY, loadEconomy, claimDaily, claimTask, claimMonthly, buyItem, equipItem, unequipSlot, dailyAmount, isoWeekday, clsOf } from '../economy.js';
+import { LOOKS, SLOTS, TASKS, MONTHLY, loadEconomy, equippedOf, claimDaily, claimTask, claimMonthly, buyItem, equipItem, unequipSlot, dailyAmount, isoWeekday, clsOf } from '../economy.js';
 
 export const gem = (size = 18) => h('span', { class: 'gem', style: { width: size + 'px', height: size + 'px' }, 'aria-hidden': 'true' });
 
@@ -11,6 +11,15 @@ export function framedAvatar(p, size, frameId) {
   const box = h('div', { class: 'framed ' + clsOf(frameId), style: { width: size + 'px', height: size + 'px' } }, a);
   if (frameId === 'halloween_frame') box.append(h('span', { class: 'pump', style: { fontSize: Math.round(size * 0.34) + 'px' } }, '🎃'));
   return box;
+}
+// Fill in someone's bought frame / name style / background once it has loaded.
+export function decorate(userId, { avBox, size, p, nameEl, bgEl }) {
+  equippedOf([userId]).then((m) => {
+    const eq = m[userId] || {};
+    if (avBox && eq.frame) avBox.replaceChildren(framedAvatar(p, size, eq.frame));
+    if (nameEl && eq.name_style) nameEl.className += ' sname ' + clsOf(eq.name_style);
+    if (bgEl && eq.background) bgEl.classList.add(clsOf(eq.background));
+  }).catch(() => {});
 }
 export const styledName = (p, nameId) => h('span', { class: 'sname ' + clsOf(nameId) }, nameOf(p));
 

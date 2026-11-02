@@ -1,6 +1,7 @@
 import { h, icon, toast, ICON, confirmSheet, fmtDate } from '../util.js';
 import { me, sb } from '../supa.js';
 import { avatar, nameOf, linkButtons, listPeople, getProfile, friendshipWith, addFriend, acceptFriend, removeFriendship, noteView } from '../social.js';
+import { decorate } from './shop.js';
 import { clean } from '../core/profanity.js';
 
 // Social tab: people you may know, with search.
@@ -81,9 +82,12 @@ export function userView(go, id) {
         );
       }
       const cover = h('div', { class: 'cover small', style: p.cover_data ? { backgroundImage: `url(${p.cover_data})` } : {} });
+      const avBox = h('div', {}, avatar(p, 92));
+      const nameEl = h('h2', {}, clean(nameOf(p)));
+      decorate(p.id, { avBox, size: 92, p, nameEl, bgEl: cover });
       body.replaceChildren(
         cover,
-        h('div', { class: 'who' }, avatar(p, 92), h('div', {}, h('h2', {}, clean(nameOf(p))), h('div', { class: 'muted' }, '@' + p.username, ' ', p.role === 'admin' ? h('span', { class: 'pill admin' }, 'admin') : null))),
+        h('div', { class: 'who' }, avBox, h('div', {}, nameEl, h('div', { class: 'muted' }, '@' + p.username, ' ', p.role === 'admin' ? h('span', { class: 'pill admin' }, 'admin') : null))),
         h('div', { class: 'muted small' }, 'สร้างบัญชีเมื่อ ' + fmtDate(p.created_at)),
         linkButtons(p.links),
         h('div', { class: 'stats' }, stat(rows.length, 'โพสต์'), stat(friends.count || 0, 'เพื่อน'), stat(likes, 'ไลก์'), stat(comments, 'คอมเมนต์')),

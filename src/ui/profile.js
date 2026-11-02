@@ -1,5 +1,6 @@
 import { h, icon, toast, loadingOverlay, confirmSheet } from '../util.js';
 import { me, updateProfile, signOutNow, sb } from '../supa.js';
+import { decorate } from './shop.js';
 import { avatar } from '../social.js';
 import { stat } from './social.js';
 import { PLATFORMS, normalizeLink } from '../core/links.js';
@@ -96,6 +97,7 @@ export function profileView(go) {
   const avWrap = h('div', { class: 'av-wrap' });
   const paintAv = () => avWrap.replaceChildren(avatar(me.profile, 92));
   paintAv();
+  decorate(me.user.id, { avBox: avWrap, size: 92, p: me.profile });
   const avPick = h('input', { type: 'file', accept: 'image/*', hidden: true });
   avPick.addEventListener('change', async () => {
     const f = avPick.files && avPick.files[0];
