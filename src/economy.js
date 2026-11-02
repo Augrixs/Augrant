@@ -19,8 +19,8 @@ export const LOOKS = {
   bg_blue: { slot: 'background', th: 'พื้นหลังน้ำเงิน', en: 'Blue Background', cls: 'bg-blue' },
   bg_sky: { slot: 'background', th: 'พื้นหลังฟ้าอ่อน', en: 'Sky Background', cls: 'bg-sky' },
   bg_aurora: { slot: 'background', th: 'พื้นหลังออโรรา', en: 'Aurora Background', cls: 'bg-aurora' },
-  blue_bundle: { slot: 'bundle', th: 'Blue Bundle (ขายตลอด)', en: 'Blue Bundle (always on sale)', contains: ['frame_blue', 'name_sky', 'bg_blue'], price: 440, own: true },
-  rainbow_bundle: { slot: 'bundle', th: 'Rainbow Bundle (ขายตลอด)', en: 'Rainbow Bundle (always on sale)', contains: ['frame_rainbow', 'name_rainbow', 'bg_aurora'], price: 800, own: true },
+  blue_bundle: { slot: 'bundle', th: 'Blue Bundle (ขายตลอด)', en: 'Blue Bundle (always on sale)', contains: ['frame_blue', 'name_sky', 'bg_blue'], price: 440, worth: 650, own: true },
+  rainbow_bundle: { slot: 'bundle', th: 'Rainbow Bundle (ขายตลอด)', en: 'Rainbow Bundle (always on sale)', contains: ['frame_rainbow', 'name_rainbow', 'bg_aurora'], price: 800, worth: 1200, own: true },
   halloween_bundle: { slot: 'bundle', th: 'Halloween Bundle', en: 'Halloween Bundle', contains: ['halloween_frame', 'halloween_name', 'halloween_bg'] },
 };
 export const SLOTS = ['frame', 'name_style', 'background'];
@@ -89,6 +89,7 @@ const call = async (fn, args) => {
 export const claimDaily = () => call('claim_daily', { p_tz_offset_min: tzOffset() });
 export const claimTask = (id) => call('claim_task', { p_task: id, p_tz_offset_min: tzOffset() });
 export const claimMonthly = () => call('claim_monthly', { p_tz_offset_min: tzOffset() });
+export const adminGiveAuru = (username, amount) => call('admin_give_auru', { p_username: username, p_amount: amount });
 export const buyBundle = (id) => call('buy_bundle', { p_bundle: id });
 export const buyItem = (id) => call('buy_item', { p_item: id });
 export const equipItem = (id) => call('equip_item', { p_item: id });

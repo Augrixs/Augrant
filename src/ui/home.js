@@ -4,7 +4,7 @@ import { framedAvatar, styledName } from './shop.js';
 import { avatar } from '../social.js';
 import { listProjects, renameProject, trashProject, restoreProject, deleteProject, purgeOld, daysLeft } from '../projects.js';
 import { sheet, ago, ICON } from '../util.js';
-import { me, signOutNow, hasRealEmail, startEmailChange, finishEmailChange } from '../supa.js';
+import { me, updateProfile, signOutNow, hasRealEmail, startEmailChange, finishEmailChange } from '../supa.js';
 import { QUALITIES, FORMATS } from '../engine/exporter.js';
 import { MODELS, clearModelCache } from '../engine/whisper.js';
 import { setSfx } from '../sfx.js';
@@ -163,6 +163,26 @@ function emailBox() {
   return box;
 }
 
+function personalBox() {
+  const p = me.profile || {};
+  const bday = h('input', { class: 'input', type: 'date', value: p.birthday || '' });
+  const g = h('select', { class: 'input' }, [['', t('ไม่ระบุ', 'Not set')], ['male', t('ชาย', 'Male')], ['female', t('หญิง', 'Female')]].map(([v, l]) => h('option', { value: v }, l)));
+  g.value = p.gender || '';
+  const save = h('button', { class: 'btn primary', type: 'button' }, t('บันทึกวันเกิดและเพศ', 'Save birthday and gender'));
+  save.addEventListener('click', async () => {
+    save.disabled = true;
+    try {
+      await updateProfile({ birthday: bday.value || null, gender: g.value || null });
+      toast(t('บันทึกแล้ว', 'Saved'));
+    } catch {
+      toast(t('บันทึกไม่สำเร็จ ลองใหม่', 'Could not save, try again'));
+    } finally {
+      save.disabled = false;
+    }
+  });
+  return h('div', { class: 'card stack' }, h('b', {}, t('ข้อมูลส่วนตัว (เห็นเฉพาะคุณ)', 'Personal info (only you see this)')), h('label', { class: 'field' }, t('วันเกิด', 'Birthday'), bday), h('label', { class: 'field' }, t('เพศ', 'Gender'), g), save);
+}
+
 export function settingsView(go) {
   const s = loadSettings();
   const upd = (k, v) => {
@@ -193,6 +213,7 @@ export function settingsView(go) {
       { class: 'pad stack' },
       h('label', { class: 'field' }, t('ภาษา', 'Language'), sel('lang', [['th', 'ไทย'], ['en', 'English']], s.lang || 'th', (v) => { upd('lang', v); go('settings'); })),
       emailBox(),
+      personalBox(),
       h('button', { class: 'btn', type: 'button', onclick: () => go('trash') }, icon('trash'), t('ถังขยะ (โปรเจกต์ที่ลบ)', 'Trash (deleted projects)')),
       h('label', { class: 'field' }, t('ความละเอียดเริ่มต้นตอน Export', 'Default export resolution'), sel('q', QUALITIES.map((q) => [q.id, q.label]), s.quality, (v) => upd('quality', v))),
       h('label', { class: 'field' }, t('ชนิดไฟล์เริ่มต้น', 'Default file type'), sel('f', FORMATS.map((f) => [f.id, f.label]), s.format, (v) => upd('format', v))),

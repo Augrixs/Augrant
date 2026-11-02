@@ -91,7 +91,7 @@ export function shopView(go) {
         const upcoming = it.startsAt && it.startsAt.getTime() > now;
         const ended = it.endsAt && it.endsAt.getTime() < now;
         const eqNow = !isBundle && st.equipped[look.slot] === id;
-        const sum = isBundle ? look.contains.reduce((a, c) => a + ((byId[c] && byId[c].price) || 0), 0) : 0;
+        const sum = isBundle ? look.worth || look.contains.reduce((a, c) => a + ((byId[c] && byId[c].price) || 0), 0) : 0;
         const art = isBundle
           ? h('div', { class: 'art bundle' + (look.own ? ' ' + id : '') }, h('span', { class: 'pumpbig' }, look.own ? '' : '🎃'), look.own ? framedAvatar(me.profile, 52, look.contains[0]) : null, h('small', {}, '-' + (sum ? Math.round((1 - it.price / sum) * 100) : 30) + '%'))
           : h('div', { class: 'art ' + (look.cls || '') }, look.slot === 'frame' ? framedAvatar(me.profile, 56, id) : look.slot === 'name_style' ? styledName(me.profile, id) : null);
@@ -108,8 +108,9 @@ export function shopView(go) {
             if (await confirmSheet(t('ซื้อไอเทม', 'Buy item'), t(`ซื้อ ${look.th} ราคา ${it.price} Auru ?`, `Buy ${look.en} for ${it.price} Auru?`), t('ซื้อ', 'Buy'))) act(() => (look.own ? buyBundle(id) : buyItem(id)), () => t('ซื้อแล้ว', 'Purchased'));
           });
         }
-        const note = isBundle ? t(`รวม 3 ชิ้น (แยกซื้อ ${sum})`, `3 items (${sum} separately)`) : '';
-        return h('div', { class: 'card item' }, art, h('b', {}, t(look.th, look.en)), note ? h('small', { class: 'muted' }, note) : null, btn);
+        const left = !upcoming && it.endsAt && it.endsAt.getTime() > now ? it.endsAt : null;
+        const note = left ? h('small', { class: 'muted' }, t('เปิดขายอีก ', 'On sale for '), h('span', { class: 'cd', 'data-at': left.getTime() }, countdown(left))) : isBundle && sum ? t(`รวม 3 ชิ้น (แยกซื้อ ${sum})`, `3 items (${sum} separately)`) : '';
+        return h('div', { class: 'card item' }, art, h('b', {}, t(look.th, look.en)), note ? (typeof note === 'string' ? h('small', { class: 'muted' }, note) : note) : null, btn);
       });
 
     const slotNames = { frame: t('กรอบ', 'Frame'), name_style: t('ชื่อ', 'Name'), background: t('พื้นหลัง', 'Background') };

@@ -1,5 +1,6 @@
 import { h, toast, sheet, fmtDate, ago, confirmSheet, loadingOverlay } from '../util.js';
 import { sb, adminCall, me } from '../supa.js';
+import { adminGiveAuru } from '../economy.js';
 
 const ACTION_LABEL = {
   login: 'เข้าสู่ระบบ',
@@ -47,8 +48,25 @@ export function adminView() {
     );
   }
 
+  const gName = h('input', { class: 'input', type: 'text', placeholder: 'username', value: me.profile ? me.profile.username : '', autocapitalize: 'none' });
+  const gAmt = h('input', { class: 'input', type: 'number', placeholder: 'Auru', value: 100 });
+  const gBtn = h('button', { class: 'btn primary', type: 'button' }, 'Give Auru');
+  gBtn.addEventListener('click', async () => {
+    const n = Math.round(Number(gAmt.value));
+    if (!gName.value.trim() || !n) return toast('ใส่ username และจำนวน');
+    gBtn.disabled = true;
+    try {
+      const bal = await adminGiveAuru(gName.value.trim(), n);
+      toast(`ให้ ${n} Auru แล้ว (ยอดใหม่ ${bal})`, 4200);
+    } catch (e) {
+      toast(e.message, 4800);
+    } finally {
+      gBtn.disabled = false;
+    }
+  });
   wrap.append(
     h('h2', {}, 'Admin Panel Augrixs Rant'),
+    h('div', { class: 'card stack' }, h('b', {}, 'ให้ Auru (ตัวเองหรือคนอื่นตาม username)'), gName, gAmt, h('small', { class: 'muted' }, 'ใส่เลขติดลบเพื่อหักคืนได้'), gBtn),
     h('div', { class: 'row' }, h('b', { class: 'grow' }, 'บัญชีทั้งหมด'), h('button', { class: 'btn sm', type: 'button', onclick: refresh }, 'รีเฟรช')),
     status,
     listBox,
