@@ -24,6 +24,7 @@ const svg = (d, extra = '') =>
   `<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ${extra}>${d}</svg>`;
 
 export const ICON = {
+  bag: svg('<path d="M5 8h14l-1 12H6z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/>'),
   eye: svg('<path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/>'),
   eyeOff: svg('<path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/><path d="M3 3l18 18"/>'),
   home: svg('<path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/>'),
@@ -157,7 +158,7 @@ export function debounce(fn, ms) {
 }
 
 export function loadSettings() {
-  const def = { quality: '720', format: 'mp4', voiceVol: 100, bgVol: 30, whisper: 'base', sfx: true };
+  const def = { lang: 'th', quality: '720', format: 'mp4', voiceVol: 100, bgVol: 30, whisper: 'base', sfx: true };
   try {
     return { ...def, ...JSON.parse(localStorage.getItem('augrant.settings') || '{}') };
   } catch {
@@ -170,4 +171,12 @@ export function saveSettings(s) {
   } catch {
     /* ignore */
   }
+}
+
+// Two-language text: t('ไทย', 'English'). Follows the language chosen in Settings.
+export function lang() {
+  return loadSettings().lang === 'en' ? 'en' : 'th';
+}
+export function t(th, en) {
+  return lang() === 'en' ? en : th;
 }

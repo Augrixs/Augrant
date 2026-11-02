@@ -9,6 +9,7 @@ import { adminView } from './ui/admin.js';
 import { createFlow } from './ui/create.js';
 import { socialView, userView } from './ui/social.js';
 import { postsView, postView } from './ui/posts.js';
+import { shopView } from './ui/shop.js';
 import { inboxView } from './ui/inbox.js';
 import { chatListView, chatView } from './ui/chat.js';
 import { badgeCounts } from './social.js';
@@ -24,7 +25,7 @@ let deepPost = null; // a shared post link waiting for the person to be signed i
 
 function navBar(active) {
   // Home Profile Social Post, then Chat (once you have a friend), Inbox (once something arrived), Admin (admins only)
-  const items = [['home', 'home', 'Home'], ['profile', 'user', 'Profile'], ['social', 'users', 'Social'], ['post', 'image', 'Post']];
+  const items = [['home', 'home', 'Home'], ['profile', 'user', 'Profile'], ['social', 'users', 'Social'], ['post', 'image', 'Post'], ['shop', 'bag', 'Shop']];
   if (badges.friends > 0) items.push(['chat', 'chat', 'Chat', badges.messages]);
   if (badges.hasInbox) items.push(['inbox', 'bell', 'Inbox', badges.unread]);
   if (me.profile && me.profile.role === 'admin') items.push(['admin', 'shield', 'Admin']);
@@ -97,6 +98,8 @@ function go(route) {
       return mount(creditsView(go), 'home');
     case 'create':
       return mount(createFlow(() => go('home'), arg));
+    case 'shop':
+      return mount(shopView(go), 'shop');
     case 'trash':
       return mount(trashView(go), 'home');
     case 'profile':

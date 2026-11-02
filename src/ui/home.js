@@ -1,4 +1,6 @@
-import { h, icon, loadSettings, saveSettings, toast, confirmSheet } from '../util.js';
+import { h, icon, loadSettings, saveSettings, toast, confirmSheet, t } from '../util.js';
+import { loadEconomy } from '../economy.js';
+import { framedAvatar, styledName } from './shop.js';
 import { avatar } from '../social.js';
 import { listProjects, renameProject, trashProject, restoreProject, deleteProject, purgeOld, daysLeft } from '../projects.js';
 import { sheet, ago, ICON } from '../util.js';
@@ -10,26 +12,28 @@ import cover from '../assets/cover.png';
 
 function greeting() {
   const hr = new Date().getHours(); // the phone's own clock, so it follows the country
-  if (hr >= 5 && hr < 12) return 'สวัสดีตอนเช้า';
-  if (hr >= 12 && hr < 17) return 'สวัสดีตอนบ่าย';
-  if (hr >= 17 && hr < 21) return 'สวัสดีตอนเย็น';
-  return 'สวัสดีตอนค่ำ';
+  if (hr >= 5 && hr < 12) return t('สวัสดีตอนเช้า', 'Good morning');
+  if (hr >= 12 && hr < 17) return t('สวัสดีตอนบ่าย', 'Good afternoon');
+  if (hr >= 17 && hr < 21) return t('สวัสดีตอนเย็น', 'Good evening');
+  return t('สวัสดีตอนค่ำ', 'Good night');
 }
 
 export function homeView(go) {
   const name = (me.profile && (me.profile.display_name || me.profile.username)) || '';
   const gear = h('button', { class: 'gear-btn', type: 'button', 'aria-label': 'Setting', onclick: () => go('settings') }, icon('gear'), h('span', {}, 'Setting'));
+  const chip = h('button', { class: 'me-chip', type: 'button', onclick: () => go('profile') }, avatar(me.profile, 40), h('b', {}, name));
+  loadEconomy().then((st) => chip.replaceChildren(framedAvatar(me.profile, 40, st.equipped.frame), st.equipped.name_style ? styledName(me.profile, st.equipped.name_style) : h('b', {}, name))).catch(() => {});
   return h(
     'div',
     { class: 'screen mc-bg home' },
     h(
       'div',
       { class: 'home-top' },
-      h('button', { class: 'me-chip', type: 'button', onclick: () => go('profile') }, avatar(me.profile, 40), h('b', {}, name)),
+      chip,
       gear,
     ),
     h('img', { class: 'logo', src: cover, alt: 'Augrixs Community' }),
-    h('div', { class: 'hello' }, greeting(), h('br'), 'Welcome, ' + name),
+    h('div', { class: 'hello' }, greeting(), h('br'), t('ยินดีต้อนรับ, ', 'Welcome, ') + name),
     h(
       'div',
       { class: 'mc-menu' },
@@ -49,7 +53,7 @@ function projectList(go) {
       const all = (await listProjects()).filter((p) => !p.trashedAt).sort((a, b) => b.updatedAt - a.updatedAt);
       box.replaceChildren(
         ...(all.length
-          ? [h('div', { class: 'proj-title' }, 'โปรเจกต์ของฉัน'), ...all.map((p) => projectCard(p))]
+          ? [h('div', { class: 'proj-title' }, t('โปรเจกต์ของฉัน', 'My projects')), ...all.map((p) => projectCard(p))]
           : []),
       );
     } catch {
@@ -61,16 +65,16 @@ function projectList(go) {
     dots.addEventListener('click', (e) => {
       e.stopPropagation();
       const s = sheet(p.name, h('div', { class: 'stack' },
-        h('button', { class: 'btn', type: 'button', onclick: () => { s.close(); rename(p); } }, icon('edit'), 'เปลี่ยนชื่อ'),
-        h('button', { class: 'btn danger', type: 'button', onclick: async () => { await trashProject(p.id); s.close(); toast('ย้ายไปถังขยะแล้ว อยู่ได้ 7 วัน'); load(); } }, icon('trash'), 'ย้ายไปถังขยะ'),
+        h('button', { class: 'btn', type: 'button', onclick: () => { s.close(); rename(p); } }, icon('edit'), t('เปลี่ยนชื่อ', 'Rename')),
+        h('button', { class: 'btn danger', type: 'button', onclick: async () => { await trashProject(p.id); s.close(); toast(t('ย้ายไปถังขยะแล้ว อยู่ได้ 7 วัน', 'Moved to trash, kept for 7 days')); load(); } }, icon('trash'), t('ย้ายไปถังขยะ', 'Move to trash')),
       ));
     });
-    return h('div', { class: 'proj', onclick: () => go('create:' + p.id) }, h('div', { class: 'grow' }, h('b', {}, p.name), h('div', { class: 'muted small' }, 'แก้ล่าสุด ' + ago(new Date(p.updatedAt).toISOString()))), dots);
+    return h('div', { class: 'proj', onclick: () => go('create:' + p.id) }, h('div', { class: 'grow' }, h('b', {}, p.name), h('div', { class: 'muted small' }, t('แก้ล่าสุด ', 'Edited ') + ago(new Date(p.updatedAt).toISOString()))), dots);
   }
   function rename(p) {
     const inp = h('input', { class: 'input', type: 'text', maxlength: 60, value: p.name });
-    const ok = h('button', { class: 'btn primary', type: 'button' }, 'บันทึกชื่อ');
-    const s = sheet('เปลี่ยนชื่อโปรเจกต์', h('div', { class: 'stack' }, inp, h('p', { class: 'muted small' }, 'ชื่อนี้จะเป็นชื่อไฟล์ตอน Export'), ok));
+    const ok = h('button', { class: 'btn primary', type: 'button' }, t('บันทึกชื่อ', 'Save name'));
+    const s = sheet(t('เปลี่ยนชื่อโปรเจกต์', 'Rename project'), h('div', { class: 'stack' }, inp, h('p', { class: 'muted small' }, t('ชื่อนี้จะเป็นชื่อไฟล์ตอน Export', 'This becomes the file name when exporting')), ok));
     ok.addEventListener('click', async () => {
       await renameProject(p.id, inp.value);
       s.close();
@@ -91,22 +95,22 @@ export function trashView(go) {
     list.replaceChildren(
       ...(all.length
         ? all.map((p) =>
-            h('div', { class: 'card stack' }, h('b', {}, p.name), h('div', { class: 'muted small' }, 'จะถูกลบเองใน ' + daysLeft(p) + ' วัน'),
+            h('div', { class: 'card stack' }, h('b', {}, p.name), h('div', { class: 'muted small' }, t('จะถูกลบเองใน ' + daysLeft(p) + ' วัน', 'Deleted automatically in ' + daysLeft(p) + ' days')),
               h('div', { class: 'row' },
-                h('button', { class: 'btn sm', type: 'button', onclick: async () => { await restoreProject(p.id); toast('กู้คืนแล้ว'); load(); } }, 'กู้คืน'),
-                h('button', { class: 'btn danger sm', type: 'button', onclick: async () => { await deleteProject(p.id); toast('ลบถาวรแล้ว'); load(); } }, 'ลบถาวร'))),
+                h('button', { class: 'btn sm', type: 'button', onclick: async () => { await restoreProject(p.id); toast(t('กู้คืนแล้ว', 'Restored')); load(); } }, t('กู้คืน', 'Restore')),
+                h('button', { class: 'btn danger sm', type: 'button', onclick: async () => { await deleteProject(p.id); toast(t('ลบถาวรแล้ว', 'Deleted permanently')); load(); } }, t('ลบถาวร', 'Delete permanently')))),
           )
-        : [h('div', { class: 'muted' }, 'ถังขยะว่างเปล่า')]),
+        : [h('div', { class: 'muted' }, t('ถังขยะว่างเปล่า', 'Trash is empty'))]),
     );
   }
   const empty = h('button', { class: 'btn danger', type: 'button', hidden: true, onclick: async () => {
-    if (!(await confirmSheet('ลบทั้งหมดในถังขยะ', 'แน่ใจหรือไม่ โปรเจกต์ทั้งหมดในถังขยะจะถูกลบถาวร กู้คืนไม่ได้', 'ลบถาวรทั้งหมด'))) return;
+    if (!(await confirmSheet(t('ลบทั้งหมดในถังขยะ', 'Empty trash'), t('แน่ใจหรือไม่ โปรเจกต์ทั้งหมดในถังขยะจะถูกลบถาวร กู้คืนไม่ได้', 'Are you sure? Everything in the trash will be permanently deleted.'), t('ลบถาวรทั้งหมด', 'Delete all permanently')))) return;
     for (const p of (await listProjects()).filter((x) => x.trashedAt)) await deleteProject(p.id);
-    toast('ล้างถังขยะแล้ว');
+    toast(t('ล้างถังขยะแล้ว', 'Trash emptied'));
     load();
-  } }, 'ลบทั้งหมดในถังขยะ');
+  } }, t('ลบทั้งหมดในถังขยะ', 'Empty trash'));
   load();
-  return h('div', { class: 'screen mc-bg' }, h('div', { class: 'page-title' }, 'ถังขยะ'), h('div', { class: 'pad stack' }, h('p', { class: 'muted small' }, 'โปรเจกต์ที่ย้ายมาที่นี่จะถูกลบเองหลัง 7 วัน'), list, empty, h('button', { class: 'mc-btn small', type: 'button', onclick: () => go('settings') }, 'Back')));
+  return h('div', { class: 'screen mc-bg' }, h('div', { class: 'page-title' }, t('ถังขยะ', 'TRASH')), h('div', { class: 'pad stack' }, h('p', { class: 'muted small' }, t('โปรเจกต์ที่ย้ายมาที่นี่จะถูกลบเองหลัง 7 วัน', 'Projects here are deleted automatically after 7 days')), list, empty, h('button', { class: 'mc-btn small', type: 'button', onclick: () => go('settings') }, 'Back')));
 }
 
 // Link or change the account email. The new address must be confirmed with a 6-digit code.
@@ -187,16 +191,17 @@ export function settingsView(go) {
     h(
       'div',
       { class: 'pad stack' },
+      h('label', { class: 'field' }, t('ภาษา', 'Language'), sel('lang', [['th', 'ไทย'], ['en', 'English']], s.lang || 'th', (v) => { upd('lang', v); go('settings'); })),
       emailBox(),
-      h('button', { class: 'btn', type: 'button', onclick: () => go('trash') }, icon('trash'), 'ถังขยะ (โปรเจกต์ที่ลบ)'),
-      h('label', { class: 'field' }, 'ความละเอียดเริ่มต้นตอน Export', sel('q', QUALITIES.map((q) => [q.id, q.label]), s.quality, (v) => upd('quality', v))),
-      h('label', { class: 'field' }, 'ชนิดไฟล์เริ่มต้น', sel('f', FORMATS.map((f) => [f.id, f.label]), s.format, (v) => upd('format', v))),
-      h('label', { class: 'field' }, 'ความดังเสียงพูดเริ่มต้น (1-1000)', vol('vv', s.voiceVol, (n) => upd('voiceVol', n))),
-      h('label', { class: 'field' }, 'ความดังเสียงวิดีโอพื้นหลังเริ่มต้น (1-1000)', vol('bv', s.bgVol, (n) => upd('bgVol', n))),
+      h('button', { class: 'btn', type: 'button', onclick: () => go('trash') }, icon('trash'), t('ถังขยะ (โปรเจกต์ที่ลบ)', 'Trash (deleted projects)')),
+      h('label', { class: 'field' }, t('ความละเอียดเริ่มต้นตอน Export', 'Default export resolution'), sel('q', QUALITIES.map((q) => [q.id, q.label]), s.quality, (v) => upd('quality', v))),
+      h('label', { class: 'field' }, t('ชนิดไฟล์เริ่มต้น', 'Default file type'), sel('f', FORMATS.map((f) => [f.id, f.label]), s.format, (v) => upd('format', v))),
+      h('label', { class: 'field' }, t('ความดังเสียงพูดเริ่มต้น (1-1000)', 'Default voice volume (1-1000)'), vol('vv', s.voiceVol, (n) => upd('voiceVol', n))),
+      h('label', { class: 'field' }, t('ความดังเสียงวิดีโอพื้นหลังเริ่มต้น (1-1000)', 'Default background volume (1-1000)'), vol('bv', s.bgVol, (n) => upd('bgVol', n))),
       h(
         'label',
         { class: 'field' },
-        'โมเดลถอดเสียง',
+        t('โมเดลถอดเสียง', 'Transcription model'),
         sel(
           'm',
           Object.keys(MODELS).map((k) => [k, { tiny: 'tiny: เร็ว แม่นน้อย', base: 'base: แนะนำ', small: 'small: แม่นกว่า ช้า ไฟล์ใหญ่' }[k]]),
@@ -208,7 +213,7 @@ export function settingsView(go) {
         'label',
         { class: 'row', style: { gap: '10px' } },
         h('input', { type: 'checkbox', checked: s.sfx !== false, onchange: (e) => { upd('sfx', e.target.checked); setSfx(e.target.checked); } }),
-        'เสียงเอฟเฟกต์ตอนกดปุ่ม',
+        t('เสียงเอฟเฟกต์ตอนกดปุ่ม', 'Button sound effects'),
       ),
       h(
         'button',
@@ -217,10 +222,10 @@ export function settingsView(go) {
           type: 'button',
           onclick: async () => {
             await clearModelCache();
-            toast('ล้างโมเดลที่ดาวน์โหลดไว้แล้ว');
+            toast(t('ล้างโมเดลที่ดาวน์โหลดไว้แล้ว', 'Models cleared'));
           },
         },
-        'ล้างโมเดลถอดเสียงที่โหลดไว้',
+        t('ล้างโมเดลถอดเสียงที่โหลดไว้', 'Clear downloaded models'),
       ),
       h(
         'button',
@@ -228,7 +233,7 @@ export function settingsView(go) {
           class: 'btn danger',
           type: 'button',
           onclick: async () => {
-            if (await confirmSheet('ออกจากระบบ', 'ต้องการออกจากระบบใช่ไหม', 'ออกจากระบบ')) {
+            if (await confirmSheet(t('ออกจากระบบ', 'Log out'), t('ต้องการออกจากระบบใช่ไหม', 'Log out now?'), t('ออกจากระบบ', 'Log out'))) {
               await signOutNow();
               go('login');
             }

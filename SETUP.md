@@ -95,3 +95,7 @@ Without it the Social, Post, Inbox and Chat tabs show errors.
    Put the Client ID and Secret in Supabase > Authentication > Sign In / Providers > Google.
 6. Authentication > URL Configuration: Site URL `https://augrixs.github.io/Augrant/`;
    Redirect URLs: add `https://augrixs.github.io/Augrant/` and `com.augrixs.augrant://auth`.
+
+## Update 1.1 - Auru, Shop, tasks
+1. Run `supabase/economy_extras.sql` in the Supabase SQL Editor (adds daily tasks + monthly claim).
+2. The Auru tables/functions (claim_daily, buy_item, equip_item, unequip_slot) must already exist.
