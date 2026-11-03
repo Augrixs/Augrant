@@ -61,7 +61,7 @@ select.input { appearance: none; }
 @media (prefers-reduced-motion: reduce) { .spinner { animation-duration: 3s; } }
 
 /* ---------- login (Roblox-like) ---------- */
-.login { flex: 1; overflow: auto; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: calc(24px + var(--safe-t)) 24px calc(24px + var(--safe-b)); background: #232527; }
+.login { position: relative; flex: 1; overflow: auto; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: calc(24px + var(--safe-t)) 24px calc(24px + var(--safe-b)); background: #232527; }
 .login .logo { width: 112px; height: 112px; border-radius: 24px; margin-bottom: 18px; }
 .login h1 { font-size: 24px; margin-bottom: 20px; }
 .login form { width: 100%; max-width: 360px; display: flex; flex-direction: column; gap: 12px; }
@@ -308,3 +308,4 @@ textarea.input { resize: vertical; min-height: 90px; }
 .art.bundle.blue_bundle { background: radial-gradient(circle, #2f6bff55, transparent 70%); }
 .art.bundle.rainbow_bundle { background: radial-gradient(circle, #ff2fd055, #2ff8ff33 50%, transparent 72%); }
 .live-av { display: inline-flex; flex: none; }
+.lang-toggle { position: absolute; top: calc(var(--safe-t) + 10px); right: 14px; z-index: 5; }

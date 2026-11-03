@@ -84,7 +84,7 @@ export function userView(go, id) {
       const cover = h('div', { class: 'cover small', style: p.cover_data ? { backgroundImage: `url(${p.cover_data})` } : {} });
       const avBox = h('div', {}, avatar(p, 92));
       const nameEl = h('h2', {}, clean(nameOf(p)));
-      decorate(p.id, { avBox, size: 92, p, nameEl, bgEl: cover });
+      decorate(p.id, { avBox, size: 92, p, nameEl, bgEl: root });
       body.replaceChildren(
         cover,
         h('div', { class: 'who' }, avBox, h('div', {}, nameEl, h('div', { class: 'muted' }, '@' + p.username, ' ', p.role === 'admin' ? h('span', { class: 'pill admin' }, 'admin') : null))),

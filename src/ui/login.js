@@ -1,4 +1,4 @@
-import { h, ICON, toast } from '../util.js';
+import { h, ICON, toast, lang, loadSettings, saveSettings } from '../util.js';
 import { signIn, sendEmailCode, verifyEmailCode, googleSignIn, finishSignUp, usernameFree, normUsername, validUsername, signOutNow } from '../supa.js';
 import cover from '../assets/cover.png';
 
@@ -16,8 +16,27 @@ function pwField(placeholder, autocomplete) {
   return { pw, wrap: h('div', { class: 'pw-wrap' }, pw, eye) };
 }
 
+// Thai / English switch, available before signing in
+function langToggle() {
+  const en = lang() === 'en';
+  return h(
+    'button',
+    {
+      class: 'link-btn lang-toggle',
+      type: 'button',
+      'data-keep': '',
+      onclick: () => {
+        const s = loadSettings();
+        s.lang = en ? 'th' : 'en';
+        saveSettings(s);
+        window.location.reload();
+      },
+    },
+    en ? 'ไทย' : 'English',
+  );
+}
 const shell = (...kids) =>
-  h('div', { class: 'login' }, h('img', { class: 'logo', src: cover, alt: 'Augrixs Community' }), h('h1', {}, 'Augrant'), ...kids);
+  h('div', { class: 'login' }, langToggle(), h('img', { class: 'logo', src: cover, alt: 'Augrixs Community' }), h('h1', {}, 'Augrant'), ...kids);
 
 // go(route) is the app router
 export function loginView(go) {

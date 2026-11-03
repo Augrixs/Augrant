@@ -158,7 +158,7 @@ export function debounce(fn, ms) {
 }
 
 export function loadSettings() {
-  const def = { lang: 'th', quality: '720', format: 'mp4', voiceVol: 100, bgVol: 30, whisper: 'base', sfx: true };
+  const def = { lang: 'en', quality: '720', format: 'mp4', voiceVol: 100, bgVol: 30, whisper: 'base', sfx: true };
   try {
     return { ...def, ...JSON.parse(localStorage.getItem('augrant.settings') || '{}') };
   } catch {

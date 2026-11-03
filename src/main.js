@@ -1,6 +1,7 @@
 import './fonts.js';
 import './styles.css';
-import { h, icon } from './util.js';
+import { h, icon, lang } from './util.js';
+import { startTranslator } from './i18n.js';
 import { loadProfile, me, startTracking, handleAuthUrl } from './supa.js';
 import { loginView, setupView } from './ui/login.js';
 import { homeView, settingsView, creditsView, trashView } from './ui/home.js';
@@ -17,6 +18,7 @@ import { installTapSounds } from './sfx.js';
 import { App } from '@capacitor/app';
 
 const app = document.getElementById('app');
+startTranslator(lang);
 let current = null; // the node of the screen on show, kept so we can dispose the editor
 let navEl = null;
 let activeTab = 'home';

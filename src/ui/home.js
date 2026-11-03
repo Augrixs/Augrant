@@ -166,7 +166,7 @@ function emailBox() {
 function personalBox() {
   const p = me.profile || {};
   const bday = h('input', { class: 'input', type: 'date', value: p.birthday || '' });
-  const g = h('select', { class: 'input' }, [['', t('ไม่ระบุ', 'Not set')], ['male', t('ชาย', 'Male')], ['female', t('หญิง', 'Female')]].map(([v, l]) => h('option', { value: v }, l)));
+  const g = h('select', { class: 'input' }, [['', t('ไม่ระบุ', 'Not set')], ['male', t('ชาย', 'Male')], ['female', t('หญิง', 'Female')]].map(([v, l]) => h('option', { value: v, 'data-keep': id === 'lang' ? '' : null }, l)));
   g.value = p.gender || '';
   // saved the moment you change it, so it is still there when you come back
   const save = async () => {
@@ -261,7 +261,7 @@ export function settingsView(go) {
         },
         'Log out',
       ),
-      h('p', { class: 'muted small' }, 'Augrant 1.1.3'),
+      h('p', { class: 'muted small' }, 'Augrant 1.2.0'),
       h('button', { class: 'mc-btn small', type: 'button', onclick: () => go('home') }, 'Done'),
     ),
   );
