@@ -169,7 +169,7 @@ function emailBox() {
 function personalBox() {
   const p = me.profile || {};
   const bday = h('input', { class: 'input', type: 'date', value: p.birthday || '' });
-  const g = h('select', { class: 'input' }, [['', t('ไม่ระบุ', 'Not set')], ['male', t('ชาย', 'Male')], ['female', t('หญิง', 'Female')]].map(([v, l]) => h('option', { value: v, 'data-keep': id === 'lang' ? '' : null }, l)));
+  const g = h('select', { class: 'input' }, [['', t('ไม่ระบุ', 'Not set')], ['male', t('ชาย', 'Male')], ['female', t('หญิง', 'Female')]].map(([v, l]) => h('option', { value: v }, l)));
   g.value = p.gender || '';
   // saved the moment you change it, so it is still there when you come back
   const save = async () => {
@@ -192,7 +192,7 @@ export function settingsView(go) {
     saveSettings(s);
   };
   const sel = (id, opts, val, cb) => {
-    const el = h('select', { class: 'input', id }, opts.map(([v, l]) => h('option', { value: v }, l)));
+    const el = h('select', { class: 'input', id }, opts.map(([v, l]) => h('option', { value: v, 'data-keep': id === 'lang' ? '' : null }, l)));
     el.value = val;
     el.addEventListener('change', () => cb(el.value));
     return el;
@@ -264,7 +264,7 @@ export function settingsView(go) {
         },
         'Log out',
       ),
-      h('p', { class: 'muted small' }, 'Augrant 1.2.1'),
+      h('p', { class: 'muted small' }, 'Augrant 1.2.2'),
       h('button', { class: 'mc-btn small', type: 'button', onclick: () => go('home') }, 'Done'),
     ),
   );
