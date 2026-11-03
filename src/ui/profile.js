@@ -95,9 +95,12 @@ export function profileView(go) {
 
   // round profile picture
   const avWrap = h('div', { class: 'av-wrap' });
-  const paintAv = () => avWrap.replaceChildren(avatar(me.profile, 92));
+  const paintAv = () => {
+    avWrap.replaceChildren(avatar(me.profile, 92));
+    decorate(me.user.id, { avBox: avWrap, size: 92, p: me.profile });
+  };
   paintAv();
-  decorate(me.user.id, { avBox: avWrap, size: 92, p: me.profile, bgEl: cover });
+  
   const avPick = h('input', { type: 'file', accept: 'image/*', hidden: true });
   avPick.addEventListener('change', async () => {
     const f = avPick.files && avPick.files[0];
@@ -152,16 +155,28 @@ export function profileView(go) {
       saveInfo.disabled = false;
     }
   });
+  // birthday and gender save the moment they change, so they are still there when you come back
+  const autoSave = async () => {
+    try {
+      await updateProfile({ birthday: bday.value || null, gender: gSel.value || null });
+      toast('บันทึกแล้ว', 1400);
+    } catch {
+      toast('บันทึกไม่สำเร็จ ลองใหม่');
+    }
+  };
+  bday.addEventListener('change', autoSave);
+  gSel.addEventListener('change', autoSave);
   const info = h('div', { class: 'card stack' }, h('b', {}, 'ข้อมูลส่วนตัว (เห็นเฉพาะคุณ)'), h('label', { class: 'field' }, 'วันเกิด', bday), h('label', { class: 'field' }, 'เพศ', gSel), h('b', {}, 'ลิงก์โซเชียลของคุณ'), ...linkInputs.map(({ pl, el }) => h('label', { class: 'field' }, pl.label, el)), saveInfo);
 
-  return h(
+  const nameEl = h('h2', {}, p.display_name || p.username);
+  const root = h(
     'div',
     { class: 'screen' },
     cover,
     h(
       'div',
       { class: 'profile-card' },
-      h('div', { class: 'who' }, h('div', { class: 'av-col' }, avWrap, h('button', { class: 'btn ghost sm', type: 'button', onclick: () => avPick.click() }, 'เปลี่ยนรูป'), avPick), h('div', {}, h('h2', {}, p.display_name || p.username), h('div', { class: 'muted' }, '@' + p.username, ' ', p.role === 'admin' ? h('span', { class: 'pill admin' }, 'admin') : null))),
+      h('div', { class: 'who' }, h('div', { class: 'av-col' }, avWrap, h('button', { class: 'btn ghost sm', type: 'button', onclick: () => avPick.click() }, 'เปลี่ยนรูป'), avPick), h('div', {}, nameEl, h('div', { class: 'muted' }, '@' + p.username, ' ', p.role === 'admin' ? h('span', { class: 'pill admin' }, 'admin') : null))),
       stats,
       h('button', { class: 'btn', type: 'button', onclick: () => go('posts:' + p.id) }, 'โพสต์ของฉัน'),
       info,
@@ -185,4 +200,6 @@ export function profileView(go) {
       h('p', { class: 'muted small' }, 'Username เปลี่ยนเองไม่ได้ ให้แอดมินเป็นคนเปลี่ยนให้'),
     ),
   );
+  decorate(me.user.id, { nameEl, bgEl: root });
+  return root;
 }
