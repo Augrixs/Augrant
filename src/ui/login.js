@@ -68,8 +68,19 @@ export function loginView(go) {
         btn.textContent = 'Sign in';
       }
     });
+    const gIn = h('button', { class: 'google-btn', type: 'button' }, h('span', { class: 'g' }, 'G'), 'เข้าสู่ระบบด้วย Google');
+    gIn.addEventListener('click', async () => {
+      err.textContent = '';
+      try {
+        await googleSignIn();
+      } catch (ex) {
+        err.textContent = 'เปิด Google ไม่ได้: ' + (ex.message || ex);
+      }
+    });
     show(
       shell(
+        gIn,
+        h('div', { class: 'or' }, h('span', {}, 'หรือ')),
         form,
         h('button', { class: 'link-btn', type: 'button', onclick: signUpStep }, 'ยังไม่มีบัญชี? สร้างบัญชีใหม่'),
         h('p', { class: 'notice' }, 'แอปบันทึกเวลาเข้าออกและคลิปที่คุณสร้างเพื่อให้แอดมินดูได้'),
@@ -89,29 +100,7 @@ export function loginView(go) {
         err.textContent = 'เปิด Google ไม่ได้: ' + (ex.message || ex);
       }
     });
-    const email = h('input', { class: 'rb-input', type: 'email', placeholder: 'อีเมล (Gmail, Hotmail หรืออื่นๆ)', autocomplete: 'email', autocapitalize: 'none', spellcheck: 'false', inputmode: 'email', 'aria-label': 'อีเมล' });
-    const send = h('button', { class: 'rb-btn', type: 'submit' }, 'ส่งรหัสยืนยัน 6 ตัว');
-    const form = h('form', {}, email, err, send);
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      err.textContent = '';
-      const v = email.value.trim();
-      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v)) {
-        err.textContent = 'อีเมลไม่ถูกต้อง';
-        return;
-      }
-      send.disabled = true;
-      send.textContent = 'กำลังส่ง...';
-      try {
-        await sendEmailCode(v);
-        codeStep(v);
-      } catch (ex) {
-        err.textContent = ex.message;
-        send.disabled = false;
-        send.textContent = 'ส่งรหัสยืนยัน 6 ตัว';
-      }
-    });
-    show(shell(h('h2', { class: 'step-title' }, 'สร้างบัญชี'), g, h('div', { class: 'or' }, h('span', {}, 'หรือ')), form, h('button', { class: 'link-btn', type: 'button', onclick: signInStep }, 'มีบัญชีแล้ว? Sign in')));
+    show(shell(h('h2', { class: 'step-title' }, 'สร้างบัญชี'), g, err, h('p', { class: 'notice' }, 'สมัครได้ด้วยบัญชี Google เท่านั้น ไม่ต้องตั้งรหัสผ่าน'), h('button', { class: 'link-btn', type: 'button', onclick: signInStep }, 'มีบัญชีแล้ว? Sign in')));
   }
 
   /* ---- step 2: the 6-digit code ---- */
@@ -156,7 +145,6 @@ export function setupView(go) {
   const user = h('input', { class: 'rb-input', type: 'text', placeholder: 'ตั้ง Username (a-z 0-9 _ . -)', autocomplete: 'username', autocapitalize: 'none', spellcheck: 'false', maxlength: 24 });
   const dname = h('input', { class: 'rb-input', type: 'text', placeholder: 'ชื่อที่แสดง (Display name) ไม่ใส่ก็ได้', maxlength: 30, autocomplete: 'nickname' });
   const hint = h('div', { class: 'small muted' }, 'ซ้ำกับคนอื่นไม่ได้');
-  const { pw, wrap } = pwField('ตั้งรหัสผ่าน (อย่างน้อย 8 ตัว)', 'new-password');
   const bday = h('input', { class: 'rb-input', type: 'date', 'aria-label': 'วันเกิด (ไม่ใส่ก็ได้)' });
   let gender = '';
   const chips = h('div', { class: 'chips' });
@@ -190,17 +178,13 @@ export function setupView(go) {
     }, 400);
   });
 
-  const form = h('form', {}, user, hint, dname, wrap, h('label', { class: 'field' }, 'วันเกิด (ไม่ใส่ก็ได้)', bday), h('div', { class: 'field' }, 'เพศ (ไม่เลือกก็ได้)', chips), err, btn);
+  const form = h('form', {}, user, hint, dname, h('label', { class: 'field' }, 'วันเกิด (ไม่ใส่ก็ได้)', bday), h('div', { class: 'field' }, 'เพศ (ไม่เลือกก็ได้)', chips), err, btn);
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
     err.textContent = '';
-    if (pw.value.length < 8) {
-      err.textContent = 'รหัสผ่านอย่างน้อย 8 ตัว';
-      return;
-    }
     btn.disabled = true;
     try {
-      await finishSignUp({ username: user.value, displayName: dname.value, password: pw.value, birthday: bday.value || null, gender });
+      await finishSignUp({ username: user.value, displayName: dname.value, password: '', birthday: bday.value || null, gender });
       go('home');
     } catch (ex) {
       err.textContent = ex.message;

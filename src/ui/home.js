@@ -214,7 +214,6 @@ export function settingsView(go) {
       'div',
       { class: 'pad stack' },
       h('label', { class: 'field' }, t('ภาษา', 'Language'), sel('lang', [['th', 'ไทย'], ['en', 'English']], s.lang || 'th', (v) => { upd('lang', v); go('settings'); })),
-      emailBox(),
       personalBox(),
       h('button', { class: 'btn', type: 'button', onclick: () => go('trash') }, icon('trash'), t('ถังขยะ (โปรเจกต์ที่ลบ)', 'Trash (deleted projects)')),
       h('label', { class: 'field' }, t('ความละเอียดเริ่มต้นตอน Export', 'Default export resolution'), sel('q', QUALITIES.map((q) => [q.id, q.label]), s.quality, (v) => upd('quality', v))),
@@ -264,7 +263,7 @@ export function settingsView(go) {
         },
         'Log out',
       ),
-      h('p', { class: 'muted small' }, 'Augrant 1.2.2'),
+      h('p', { class: 'muted small' }, 'Augrant 1.3.0'),
       h('button', { class: 'mc-btn small', type: 'button', onclick: () => go('home') }, 'Done'),
     ),
   );

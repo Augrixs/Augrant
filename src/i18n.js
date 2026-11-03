@@ -362,6 +362,8 @@ export const DICT = {
   'Whisper (OpenAI) ผ่าน Transformers.js (Hugging Face)': 'Whisper (OpenAI) via Transformers.js (Hugging Face)',
   'เปิดในแอป Augrant (ล็อกอินให้อัตโนมัติ)': 'Open in the Augrant app (signed in)',
   'ส่งอีเมลไม่ได้ ระบบส่งอีเมลของแอปมีปัญหา แจ้งแอดมิน หรือลองใหม่ภายหลัง': 'Could not send the email. The app\'s email service has a problem. Tell the admin or try again later',
+  'สมัครได้ด้วยบัญชี Google เท่านั้น ไม่ต้องตั้งรหัสผ่าน': 'Sign up with a Google account only. No password needed',
+  'เข้าสู่ระบบด้วย Google': 'Sign in with Google',
   // misc
   'ยืนยันการลบ': 'Confirm delete',
 };
