@@ -113,6 +113,15 @@ export async function googleSignIn() {
   if (isAppNative && data && data.url) await Browser.open({ url: data.url });
 }
 
+// On an Android phone's browser: hand the signed-in session to the installed app.
+export const canOpenApp = !isAppNative && /Android/i.test(navigator.userAgent || '');
+export async function openAppWithSession() {
+  const { data } = await sb.auth.getSession();
+  const s = data && data.session;
+  if (!s) throw new Error('not signed in');
+  window.location.href = `${APP_SCHEME}#access_token=${encodeURIComponent(s.access_token)}&refresh_token=${encodeURIComponent(s.refresh_token)}`;
+}
+
 // Reads the tokens Supabase puts on the link after Google sign-in.
 export async function handleAuthUrl(url) {
   const u = String(url || '');

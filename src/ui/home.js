@@ -4,7 +4,7 @@ import { framedAvatar, styledName } from './shop.js';
 import { avatar } from '../social.js';
 import { listProjects, renameProject, trashProject, restoreProject, deleteProject, purgeOld, daysLeft } from '../projects.js';
 import { sheet, ago, ICON } from '../util.js';
-import { me, updateProfile, signOutNow, hasRealEmail, startEmailChange, finishEmailChange } from '../supa.js';
+import { me, canOpenApp, openAppWithSession, updateProfile, signOutNow, hasRealEmail, startEmailChange, finishEmailChange } from '../supa.js';
 import { QUALITIES, FORMATS } from '../engine/exporter.js';
 import { MODELS, clearModelCache } from '../engine/whisper.js';
 import { setSfx } from '../sfx.js';
@@ -32,6 +32,9 @@ export function homeView(go) {
       chip,
       gear,
     ),
+    canOpenApp
+      ? h('button', { class: 'btn primary open-app', type: 'button', onclick: () => openAppWithSession().catch((e) => toast(e.message)) }, t('เปิดในแอป Augrant (ล็อกอินให้อัตโนมัติ)', 'Open in the Augrant app (signed in)'))
+      : null,
     h('img', { class: 'logo', src: cover, alt: 'Augrixs Community' }),
     h('div', { class: 'hello' }, greeting(), h('br'), t('ยินดีต้อนรับ, ', 'Welcome, ') + name),
     h(
@@ -261,7 +264,7 @@ export function settingsView(go) {
         },
         'Log out',
       ),
-      h('p', { class: 'muted small' }, 'Augrant 1.2.0'),
+      h('p', { class: 'muted small' }, 'Augrant 1.2.1'),
       h('button', { class: 'mc-btn small', type: 'button', onclick: () => go('home') }, 'Done'),
     ),
   );

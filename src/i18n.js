@@ -360,6 +360,7 @@ export const DICT = {
   'โพสต์ของฉัน': 'My posts',
   'Username เปลี่ยนเองไม่ได้ ให้แอดมินเป็นคนเปลี่ยนให้': 'You cannot change your username yourself. Ask the admin',
   'Whisper (OpenAI) ผ่าน Transformers.js (Hugging Face)': 'Whisper (OpenAI) via Transformers.js (Hugging Face)',
+  'เปิดในแอป Augrant (ล็อกอินให้อัตโนมัติ)': 'Open in the Augrant app (signed in)',
   // misc
   'ยืนยันการลบ': 'Confirm delete',
 };
