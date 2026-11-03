@@ -1,4 +1,5 @@
 import { h, toast } from '../util.js';
+import { liveAvatar, liveName } from './shop.js';
 import { me, sb } from '../supa.js';
 import { avatar, nameOf, when, acceptFriend, removeFriendship } from '../social.js';
 import { clean } from '../core/profanity.js';
@@ -37,8 +38,8 @@ export function inboxView(go, onRead) {
             return h(
               'div',
               { class: 'card person' },
-              h('button', { class: 'plain', type: 'button', onclick: () => go('user:' + r.req.id) }, avatar(r.req, 46)),
-              h('div', { class: 'grow' }, h('b', {}, clean(nameOf(r.req))), h('div', { class: 'muted small' }, 'ขอเป็นเพื่อน · ' + when(r.created_at))),
+              h('button', { class: 'plain', type: 'button', onclick: () => go('user:' + r.req.id) }, liveAvatar(r.req, 46)),
+              h('div', { class: 'grow' }, liveName(r.req, clean(nameOf(r.req)), 'b'), h('div', { class: 'muted small' }, 'ขอเป็นเพื่อน · ' + when(r.created_at))),
               h('button', { class: 'btn primary sm', type: 'button', onclick: async () => { await acceptFriend(r.id); done('เป็นเพื่อนกันแล้ว'); } }, 'รับ'),
               h('button', { class: 'btn sm', type: 'button', onclick: async () => { await removeFriendship(r.id); done('ปฏิเสธแล้ว'); } }, 'ลบ'),
             );
@@ -51,8 +52,8 @@ export function inboxView(go, onRead) {
             h(
               'button',
               { class: 'card person' + (n.read ? '' : ' unread'), type: 'button', onclick: () => (n.post_id ? go('postview:' + n.post_id) : go('user:' + n.actor_p.id)) },
-              avatar(n.actor_p, 42),
-              h('div', { class: 'grow' }, h('div', {}, h('b', {}, clean(nameOf(n.actor_p))), ' ' + (WHAT[n.type] || '')), n.body ? h('div', { class: 'muted small' }, '“' + clean(n.body) + '”') : null, h('div', { class: 'muted small' }, when(n.created_at))),
+              liveAvatar(n.actor_p, 42),
+              h('div', { class: 'grow' }, h('div', {}, liveName(n.actor_p, clean(nameOf(n.actor_p)), 'b'), ' ' + (WHAT[n.type] || '')), n.body ? h('div', { class: 'muted small' }, '“' + clean(n.body) + '”') : null, h('div', { class: 'muted small' }, when(n.created_at))),
             ),
           )
         : [h('div', { class: 'muted small' }, 'ยังไม่มีการแจ้งเตือน')]),

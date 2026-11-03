@@ -168,19 +168,18 @@ function personalBox() {
   const bday = h('input', { class: 'input', type: 'date', value: p.birthday || '' });
   const g = h('select', { class: 'input' }, [['', t('ไม่ระบุ', 'Not set')], ['male', t('ชาย', 'Male')], ['female', t('หญิง', 'Female')]].map(([v, l]) => h('option', { value: v }, l)));
   g.value = p.gender || '';
-  const save = h('button', { class: 'btn primary', type: 'button' }, t('บันทึกวันเกิดและเพศ', 'Save birthday and gender'));
-  save.addEventListener('click', async () => {
-    save.disabled = true;
+  // saved the moment you change it, so it is still there when you come back
+  const save = async () => {
     try {
       await updateProfile({ birthday: bday.value || null, gender: g.value || null });
-      toast(t('บันทึกแล้ว', 'Saved'));
+      toast(t('บันทึกแล้ว', 'Saved'), 1400);
     } catch {
       toast(t('บันทึกไม่สำเร็จ ลองใหม่', 'Could not save, try again'));
-    } finally {
-      save.disabled = false;
     }
-  });
-  return h('div', { class: 'card stack' }, h('b', {}, t('ข้อมูลส่วนตัว (เห็นเฉพาะคุณ)', 'Personal info (only you see this)')), h('label', { class: 'field' }, t('วันเกิด', 'Birthday'), bday), h('label', { class: 'field' }, t('เพศ', 'Gender'), g), save);
+  };
+  bday.addEventListener('change', save);
+  g.addEventListener('change', save);
+  return h('div', { class: 'card stack' }, h('b', {}, t('ข้อมูลส่วนตัว (เห็นเฉพาะคุณ)', 'Personal info (only you see this)')), h('label', { class: 'field' }, t('วันเกิด', 'Birthday'), bday), h('label', { class: 'field' }, t('เพศ', 'Gender'), g));
 }
 
 export function settingsView(go) {
@@ -262,7 +261,7 @@ export function settingsView(go) {
         },
         'Log out',
       ),
-      h('p', { class: 'muted small' }, 'Augrant 1.1.1'),
+      h('p', { class: 'muted small' }, 'Augrant 1.1.2'),
       h('button', { class: 'mc-btn small', type: 'button', onclick: () => go('home') }, 'Done'),
     ),
   );

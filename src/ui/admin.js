@@ -53,7 +53,7 @@ export function adminView() {
   const gBtn = h('button', { class: 'btn primary', type: 'button' }, 'Give Auru');
   gBtn.addEventListener('click', async () => {
     const n = Math.round(Number(gAmt.value));
-    if (!gName.value.trim() || !n) return toast('ใส่ username และจำนวน');
+    if (!gName.value.trim() || !n || !Number.isSafeInteger(n)) return toast('ใส่ username และจำนวน');
     gBtn.disabled = true;
     try {
       const bal = await adminGiveAuru(gName.value.trim(), n);
@@ -66,7 +66,7 @@ export function adminView() {
   });
   wrap.append(
     h('h2', {}, 'Admin Panel Augrixs Rant'),
-    h('div', { class: 'card stack' }, h('b', {}, 'ให้ Auru (ตัวเองหรือคนอื่นตาม username)'), gName, gAmt, h('small', { class: 'muted' }, 'ใส่เลขติดลบเพื่อหักคืนได้'), gBtn),
+    h('div', { class: 'card stack' }, h('b', {}, 'ให้ Auru (ตัวเองหรือคนอื่นตาม username)'), gName, gAmt, h('small', { class: 'muted' }, 'ใส่เลขติดลบเพื่อหักคืนได้ (ยอดไม่ต่ำกว่า 0) ใส่ได้เกินล้าน'), gBtn),
     h('div', { class: 'row' }, h('b', { class: 'grow' }, 'บัญชีทั้งหมด'), h('button', { class: 'btn sm', type: 'button', onclick: refresh }, 'รีเฟรช')),
     status,
     listBox,

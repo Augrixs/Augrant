@@ -307,3 +307,4 @@ textarea.input { resize: vertical; min-height: 90px; }
 .bg-aurora { background: linear-gradient(120deg, #0b1f66, #2f6bff, #6ec6ff, #7a2fff, #ff2fd0) !important; background-size: 300% 300% !important; animation: slide 8s linear infinite alternate; }
 .art.bundle.blue_bundle { background: radial-gradient(circle, #2f6bff55, transparent 70%); }
 .art.bundle.rainbow_bundle { background: radial-gradient(circle, #ff2fd055, #2ff8ff33 50%, transparent 72%); }
+.live-av { display: inline-flex; flex: none; }

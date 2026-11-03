@@ -97,7 +97,7 @@ export function profileView(go) {
   const avWrap = h('div', { class: 'av-wrap' });
   const paintAv = () => avWrap.replaceChildren(avatar(me.profile, 92));
   paintAv();
-  decorate(me.user.id, { avBox: avWrap, size: 92, p: me.profile });
+  decorate(me.user.id, { avBox: avWrap, size: 92, p: me.profile, bgEl: cover });
   const avPick = h('input', { type: 'file', accept: 'image/*', hidden: true });
   avPick.addEventListener('change', async () => {
     const f = avPick.files && avPick.files[0];

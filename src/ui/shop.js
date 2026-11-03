@@ -18,7 +18,7 @@ export function decorate(userId, { avBox, size, p, nameEl, bgEl }) {
     const eq = m[userId] || {};
     if (avBox && eq.frame) avBox.replaceChildren(framedAvatar(p, size, eq.frame));
     if (nameEl && eq.name_style) nameEl.className += ' sname ' + clsOf(eq.name_style);
-    if (bgEl && eq.background) bgEl.classList.add(clsOf(eq.background));
+    if (bgEl && eq.background && !bgEl.style.backgroundImage) bgEl.classList.add(clsOf(eq.background));
   }).catch(() => {});
 }
 export const styledName = (p, nameId) => h('span', { class: 'sname ' + clsOf(nameId) }, nameOf(p));
@@ -142,4 +142,54 @@ export function shopView(go) {
   }
   render();
   return root;
+}
+
+// Avatar / name that pick up the person's bought frame and name style once they load.
+// Ids asked for in the same moment are fetched with one query.
+const eqCache = new Map();
+let pending = new Map();
+let flushT = 0;
+function wantEq(id) {
+  if (!id) return Promise.resolve({});
+  if (eqCache.has(id)) return eqCache.get(id);
+  const p = new Promise((res) => pending.set(id, res));
+  eqCache.set(id, p);
+  clearTimeout(flushT);
+  flushT = setTimeout(async () => {
+    const batch = pending;
+    pending = new Map();
+    let map = {};
+    try {
+      map = await equippedOf([...batch.keys()]);
+    } catch {
+      /* plain look is fine */
+    }
+    batch.forEach((res, uid) => res(map[uid] || {}));
+  }, 30);
+  return p;
+}
+export function liveAvatar(p, size = 40) {
+  const box = h('div', { class: 'live-av' }, avatar(p, size));
+  wantEq(p && p.id).then((eq) => {
+    if (eq.frame) box.replaceChildren(framedAvatar(p, size, eq.frame));
+  });
+  return box;
+}
+export function liveName(p, text, tag = 'span') {
+  const el = h(tag, {}, text == null ? nameOf(p) : text);
+  wantEq(p && p.id).then((eq) => {
+    if (eq.name_style) el.className = (el.className ? el.className + ' ' : '') + 'sname ' + clsOf(eq.name_style);
+  });
+  return el;
+}
+export function liveBg(p, el) {
+  wantEq(p && p.id).then((eq) => {
+    if (eq.background) el.classList.add(clsOf(eq.background));
+  });
+  return el;
+}
+export function liveStyleTitle(p, el) {
+  wantEq(p && p.id).then((eq) => {
+    if (eq.name_style) el.className = (el.className ? el.className + ' ' : '') + 'sname ' + clsOf(eq.name_style);
+  });
 }

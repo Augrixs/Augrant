@@ -67,7 +67,7 @@ const niceAuthError = (e) => {
 };
 
 export async function sendEmailCode(email) {
-  const { error } = await sb.auth.signInWithOtp({ email: email.trim().toLowerCase(), options: { shouldCreateUser: true } });
+  const { error } = await sb.auth.signInWithOtp({ email: email.trim().toLowerCase(), options: { shouldCreateUser: true, emailRedirectTo: 'https://augrixs.github.io/Augrant/' } });
   if (error) throw new Error(niceAuthError(error));
 }
 
@@ -84,7 +84,7 @@ export async function usernameFree(u) {
 }
 
 // Last step of sign-up: password, unique username, optional birthday and gender.
-export async function finishSignUp({ username, password, birthday, gender }) {
+export async function finishSignUp({ username, displayName, password, birthday, gender }) {
   const u = normUsername(username);
   if (!validUsername(u)) throw new Error('Username ใช้ a-z 0-9 _ . - ยาว 3-24 ตัว');
   if (!(await usernameFree(u))) throw new Error('Username นี้มีคนใช้แล้ว');
@@ -92,7 +92,7 @@ export async function finishSignUp({ username, password, birthday, gender }) {
     const { error: pe } = await sb.auth.updateUser({ password });
     if (pe) throw new Error(niceAuthError(pe));
   }
-  const row = { id: me.user.id, username: u, display_name: u };
+  const row = { id: me.user.id, username: u, display_name: String(displayName || '').trim().slice(0, 30) || u };
   if (birthday) row.birthday = birthday;
   if (gender === 'male' || gender === 'female') row.gender = gender;
   const { error } = await sb.from('profiles').insert(row);

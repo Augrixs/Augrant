@@ -1,7 +1,7 @@
 import { h, icon, toast, ICON, confirmSheet, fmtDate } from '../util.js';
 import { me, sb } from '../supa.js';
 import { avatar, nameOf, linkButtons, listPeople, getProfile, friendshipWith, addFriend, acceptFriend, removeFriendship, noteView } from '../social.js';
-import { decorate } from './shop.js';
+import { decorate, liveAvatar, liveName } from './shop.js';
 import { clean } from '../core/profanity.js';
 
 // Social tab: people you may know, with search.
@@ -19,8 +19,8 @@ export function socialView(go) {
               h(
                 'button',
                 { class: 'card person', type: 'button', onclick: () => go('user:' + p.id) },
-                avatar(p, 46),
-                h('div', { class: 'grow' }, h('b', {}, clean(nameOf(p))), h('div', { class: 'muted small' }, '@' + p.username)),
+                liveAvatar(p, 46),
+                h('div', { class: 'grow' }, liveName(p, clean(nameOf(p)), 'b'), h('div', { class: 'muted small' }, '@' + p.username)),
                 p.role === 'admin' ? h('span', { class: 'pill admin' }, 'admin') : null,
               ),
             )

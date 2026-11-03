@@ -135,6 +135,7 @@ export function loginView(go) {
 // Step 3 of sign-up: username, password, optional birthday and gender.
 export function setupView(go) {
   const user = h('input', { class: 'rb-input', type: 'text', placeholder: 'ตั้ง Username (a-z 0-9 _ . -)', autocomplete: 'username', autocapitalize: 'none', spellcheck: 'false', maxlength: 24 });
+  const dname = h('input', { class: 'rb-input', type: 'text', placeholder: 'ชื่อที่แสดง (Display name) ไม่ใส่ก็ได้', maxlength: 30, autocomplete: 'nickname' });
   const hint = h('div', { class: 'small muted' }, 'ซ้ำกับคนอื่นไม่ได้');
   const { pw, wrap } = pwField('ตั้งรหัสผ่าน (อย่างน้อย 8 ตัว)', 'new-password');
   const bday = h('input', { class: 'rb-input', type: 'date', 'aria-label': 'วันเกิด (ไม่ใส่ก็ได้)' });
@@ -170,7 +171,7 @@ export function setupView(go) {
     }, 400);
   });
 
-  const form = h('form', {}, user, hint, wrap, h('label', { class: 'field' }, 'วันเกิด (ไม่ใส่ก็ได้)', bday), h('div', { class: 'field' }, 'เพศ (ไม่เลือกก็ได้)', chips), err, btn);
+  const form = h('form', {}, user, hint, dname, wrap, h('label', { class: 'field' }, 'วันเกิด (ไม่ใส่ก็ได้)', bday), h('div', { class: 'field' }, 'เพศ (ไม่เลือกก็ได้)', chips), err, btn);
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
     err.textContent = '';
@@ -180,7 +181,7 @@ export function setupView(go) {
     }
     btn.disabled = true;
     try {
-      await finishSignUp({ username: user.value, password: pw.value, birthday: bday.value || null, gender });
+      await finishSignUp({ username: user.value, displayName: dname.value, password: pw.value, birthday: bday.value || null, gender });
       go('home');
     } catch (ex) {
       err.textContent = ex.message;

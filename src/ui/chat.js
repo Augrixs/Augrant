@@ -1,4 +1,5 @@
 import { h, toast, ICON } from '../util.js';
+import { liveAvatar, liveName, liveStyleTitle } from './shop.js';
 import { me, sb } from '../supa.js';
 import { avatar, nameOf, when, friendProfiles, getProfile } from '../social.js';
 import { clean } from '../core/profanity.js';
@@ -14,7 +15,7 @@ export function chatListView(go) {
       friends.sort((a, b) => (n[b.id] || 0) - (n[a.id] || 0));
       list.replaceChildren(
         ...(friends.length
-          ? friends.map((p) => h('button', { class: 'card person', type: 'button', onclick: () => go('chat:' + p.id) }, avatar(p, 46), h('div', { class: 'grow' }, h('b', {}, clean(nameOf(p))), h('div', { class: 'muted small' }, '@' + p.username)), n[p.id] ? h('span', { class: 'badge' }, String(n[p.id])) : null))
+          ? friends.map((p) => h('button', { class: 'card person', type: 'button', onclick: () => go('chat:' + p.id) }, liveAvatar(p, 46), h('div', { class: 'grow' }, liveName(p, clean(nameOf(p)), 'b'), h('div', { class: 'muted small' }, '@' + p.username)), n[p.id] ? h('span', { class: 'badge' }, String(n[p.id])) : null))
           : [h('div', { class: 'muted' }, 'ยังไม่มีเพื่อน แอดเพื่อนที่แท็บ Social ก่อน')]),
       );
     } catch (e) {
@@ -89,7 +90,8 @@ export function chatView(go, otherId, onRead) {
     other = p;
     if (!p || dead) return;
     title.textContent = clean(nameOf(p));
-    head.insertBefore(avatar(p, 34), title);
+    head.insertBefore(liveAvatar(p, 34), title);
+    liveStyleTitle(p, title);
   });
   load(true);
   timer = setInterval(() => load(false), 3000);

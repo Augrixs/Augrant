@@ -1,4 +1,5 @@
 import { h, icon, toast, sheet, ICON, ago, loadingOverlay, confirmSheet } from '../util.js';
+import { liveAvatar, liveName } from './shop.js';
 import { me, sb } from '../supa.js';
 import { avatar, nameOf, when, friendIds, postLink, noteView, viewCounts, getProfile } from '../social.js';
 import { clean } from '../core/profanity.js';
@@ -94,8 +95,8 @@ function postCard(p, { go, onDeleted }) {
   const who = h(
     'button',
     { class: 'post-head', type: 'button', onclick: () => { noteView(p.author); go(p.author === me.user.id ? 'profile' : 'user:' + p.author); } },
-    avatar(p.profiles, 42),
-    h('div', {}, h('b', {}, clean(nameOf(p.profiles))), h('div', { class: 'muted small' }, 'ลงเมื่อ ' + ago(p.created_at).replace('ที่แล้ว', 'ที่แล้ว'))),
+    liveAvatar(p.profiles, 42),
+    h('div', {}, liveName(p.profiles, clean(nameOf(p.profiles)), 'b'), h('div', { class: 'muted small' }, 'ลงเมื่อ ' + ago(p.created_at).replace('ที่แล้ว', 'ที่แล้ว'))),
   );
   const mine = p.author === me.user.id || (me.profile && me.profile.role === 'admin');
   const del = mine
@@ -184,8 +185,8 @@ function commentsSheet(p, onCount, go) {
             return h(
               'div',
               { class: 'comment' },
-              avatar(c.profiles, 34),
-              h('div', { class: 'grow' }, h('b', {}, clean(nameOf(c.profiles))), h('div', {}, clean(c.body)), h('div', { class: 'muted small' }, when(c.created_at))),
+              liveAvatar(c.profiles, 34),
+              h('div', { class: 'grow' }, liveName(c.profiles, clean(nameOf(c.profiles)), 'b'), h('div', {}, clean(c.body)), h('div', { class: 'muted small' }, when(c.created_at))),
               del,
             );
           })
