@@ -310,3 +310,4 @@ textarea.input { resize: vertical; min-height: 90px; }
 .live-av { display: inline-flex; flex: none; }
 .lang-toggle { position: absolute; top: calc(var(--safe-t) + 10px); right: 14px; z-index: 5; }
 .open-app { margin: 10px 14px 0; width: calc(100% - 28px); }
+.small-link { font-size: 13px; opacity: .8; margin-top: 18px; }

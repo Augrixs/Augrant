@@ -43,7 +43,29 @@ export function loginView(go) {
   const root = h('div', {});
   const show = (el) => root.replaceChildren(el);
 
-  /* ---- sign in ---- */
+  /* ---- the one screen: continue with Google ---- */
+  function mainStep() {
+    const err = h('div', { class: 'err', role: 'alert' });
+    const g = h('button', { class: 'google-btn', type: 'button' }, h('span', { class: 'g' }, 'G'), 'ดำเนินการต่อด้วย Google');
+    g.addEventListener('click', async () => {
+      err.textContent = '';
+      try {
+        await googleSignIn();
+      } catch (ex) {
+        err.textContent = 'เปิด Google ไม่ได้: ' + (ex.message || ex);
+      }
+    });
+    show(
+      shell(
+        g,
+        err,
+        h('p', { class: 'notice' }, 'ใช้บัญชี Google เข้าใช้งาน ถ้ายังไม่มีบัญชีใน Augrant จะให้ตั้ง username ต่อ'),
+        h('button', { class: 'link-btn small-link', type: 'button', onclick: signInStep }, 'บัญชีเก่า? เข้าด้วย Username'),
+      ),
+    );
+  }
+
+  /* ---- old accounts: username and password ---- */
   function signInStep() {
     const user = h('input', { class: 'rb-input', type: 'text', placeholder: 'Username หรืออีเมล', autocomplete: 'username', autocapitalize: 'none', spellcheck: 'false', 'aria-label': 'Username หรืออีเมล' });
     const { pw, wrap } = pwField('Password', 'current-password');
@@ -79,10 +101,8 @@ export function loginView(go) {
     });
     show(
       shell(
-        gIn,
-        h('div', { class: 'or' }, h('span', {}, 'หรือ')),
         form,
-        h('button', { class: 'link-btn', type: 'button', onclick: signUpStep }, 'ยังไม่มีบัญชี? สร้างบัญชีใหม่'),
+        h('button', { class: 'link-btn', type: 'button', onclick: mainStep }, 'กลับ'),
         h('p', { class: 'notice' }, 'แอปบันทึกเวลาเข้าออกและคลิปที่คุณสร้างเพื่อให้แอดมินดูได้'),
       ),
     );
@@ -136,7 +156,7 @@ export function loginView(go) {
     );
   }
 
-  signInStep();
+  mainStep();
   return root;
 }
 

@@ -364,6 +364,9 @@ export const DICT = {
   'ส่งอีเมลไม่ได้ ระบบส่งอีเมลของแอปมีปัญหา แจ้งแอดมิน หรือลองใหม่ภายหลัง': 'Could not send the email. The app\'s email service has a problem. Tell the admin or try again later',
   'สมัครได้ด้วยบัญชี Google เท่านั้น ไม่ต้องตั้งรหัสผ่าน': 'Sign up with a Google account only. No password needed',
   'เข้าสู่ระบบด้วย Google': 'Sign in with Google',
+  'ดำเนินการต่อด้วย Google': 'Continue with Google',
+  'ใช้บัญชี Google เข้าใช้งาน ถ้ายังไม่มีบัญชีใน Augrant จะให้ตั้ง username ต่อ': 'Use your Google account. If you do not have an Augrant account yet, you will set up a username next',
+  'บัญชีเก่า? เข้าด้วย Username': 'Old account? Sign in with username',
   // misc
   'ยืนยันการลบ': 'Confirm delete',
 };
