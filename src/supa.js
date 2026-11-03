@@ -63,7 +63,8 @@ const niceAuthError = (e) => {
   if (/rate limit|too many|seconds/i.test(m)) return 'ขอรหัสถี่เกินไป รอสักครู่แล้วลองใหม่';
   if (/expired|invalid/i.test(m)) return 'รหัสไม่ถูกต้องหรือหมดอายุ';
   if (/valid email|invalid format/i.test(m)) return 'อีเมลไม่ถูกต้อง';
-  return m || 'ทำไม่สำเร็จ';
+  if (!m || m === '{}' || /sending|smtp|unexpected|500/i.test(m)) return 'ส่งอีเมลไม่ได้ ระบบส่งอีเมลของแอปมีปัญหา แจ้งแอดมิน หรือลองใหม่ภายหลัง';
+  return m;
 };
 
 export async function sendEmailCode(email) {

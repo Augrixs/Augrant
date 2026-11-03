@@ -361,6 +361,7 @@ export const DICT = {
   'Username เปลี่ยนเองไม่ได้ ให้แอดมินเป็นคนเปลี่ยนให้': 'You cannot change your username yourself. Ask the admin',
   'Whisper (OpenAI) ผ่าน Transformers.js (Hugging Face)': 'Whisper (OpenAI) via Transformers.js (Hugging Face)',
   'เปิดในแอป Augrant (ล็อกอินให้อัตโนมัติ)': 'Open in the Augrant app (signed in)',
+  'ส่งอีเมลไม่ได้ ระบบส่งอีเมลของแอปมีปัญหา แจ้งแอดมิน หรือลองใหม่ภายหลัง': 'Could not send the email. The app\'s email service has a problem. Tell the admin or try again later',
   // misc
   'ยืนยันการลบ': 'Confirm delete',
 };
