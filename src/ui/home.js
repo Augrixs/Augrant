@@ -263,7 +263,7 @@ export function settingsView(go) {
         },
         'Log out',
       ),
-      h('p', { class: 'muted small' }, 'Augrant 1.3.1'),
+      h('p', { class: 'muted small' }, 'Augrant 1.4.0'),
       h('button', { class: 'mc-btn small', type: 'button', onclick: () => go('home') }, 'Done'),
     ),
   );
@@ -292,4 +292,39 @@ export function creditsView(go) {
       h('button', { class: 'mc-btn small', type: 'button', onclick: () => go('home') }, 'Done'),
     ),
   );
+}
+
+// Shown instead of the app while the account is banned.
+export function bannedView(ban, onFree, onLogout) {
+  const left = h('div', { class: 'ban-left' });
+  const tick = () => {
+    if (!ban.until) return (left.textContent = '');
+    const s = Math.max(0, Math.ceil((ban.until - Date.now()) / 1000));
+    if (s <= 0) {
+      clearInterval(timer);
+      return onFree();
+    }
+    const d = Math.floor(s / 86400);
+    const hh = String(Math.floor((s % 86400) / 3600)).padStart(2, '0');
+    const mm = String(Math.floor((s % 3600) / 60)).padStart(2, '0');
+    const ss = String(s % 60).padStart(2, '0');
+    left.textContent = (d ? d + 'd ' : '') + `${hh}:${mm}:${ss}`;
+  };
+  const timer = setInterval(tick, 1000);
+  const root = h(
+    'div',
+    { class: 'screen banned' },
+    h('div', { class: 'ban-box' },
+      h('div', { class: 'ban-icon' }, '⛔'),
+      h('h1', {}, 'You Have been Banned'),
+      h('p', { class: 'ban-for' }, 'For ' + ban.label),
+      h('p', { class: 'ban-reason' }, 'Reason : ' + ban.reason),
+      ban.note ? h('p', { class: 'muted' }, ban.note) : null,
+      left,
+      h('button', { class: 'btn', type: 'button', onclick: onLogout }, 'Log out'),
+    ),
+  );
+  root.dispose = () => clearInterval(timer);
+  tick();
+  return root;
 }

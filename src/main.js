@@ -2,9 +2,10 @@ import './fonts.js';
 import './styles.css';
 import { h, icon, lang } from './util.js';
 import { startTranslator } from './i18n.js';
-import { loadProfile, me, startTracking, handleAuthUrl } from './supa.js';
+import { loadProfile, me, startTracking, handleAuthUrl, signOutNow } from './supa.js';
 import { loginView, setupView } from './ui/login.js';
-import { homeView, settingsView, creditsView, trashView } from './ui/home.js';
+import { homeView, settingsView, creditsView, trashView, bannedView } from './ui/home.js';
+import { activeBan } from './bans.js';
 import { profileView } from './ui/profile.js';
 import { adminView } from './ui/admin.js';
 import { createFlow } from './ui/create.js';
@@ -50,6 +51,7 @@ function mount(node, active) {
 
 async function refreshBadges() {
   if (!me.profile) return;
+  checkBan();
   try {
     badges = await badgeCounts();
   } catch {
@@ -77,7 +79,22 @@ function takeDeepLink() {
   return id;
 }
 
+let banNow = null; // the active ban of this account, if any
+async function checkBan() {
+  if (!me.user) return;
+  try {
+    const b = await activeBan();
+    const was = !!banNow;
+    banNow = b;
+    if (b && !was) go('banned');
+    else if (!b && was) go('home');
+  } catch {
+    /* offline: keep what we had */
+  }
+}
+
 function go(route) {
+  if (banNow && me.profile && route !== 'login' && route !== 'banned') return go('banned');
   if (!me.profile && route !== 'login' && route !== 'setup') {
     takeDeepLinkLater();
     return go(me.user ? 'setup' : 'login');
@@ -85,6 +102,8 @@ function go(route) {
   const [r, arg] = String(route).split(':');
   refreshBadges();
   switch (r) {
+    case 'banned':
+      return mount(bannedView(banNow || { label: '', reason: '' }, () => { banNow = null; go('home'); }, async () => { await signOutNow(); banNow = null; go('login'); }));
     case 'login':
       return mount(loginView(go));
     case 'setup':
@@ -140,7 +159,8 @@ async function boot() {
     if (p) {
       startTracking();
       setInterval(refreshBadges, 20000);
-      return go('home');
+      await checkBan();
+      return go(banNow ? 'banned' : 'home');
     }
     if (me.user) return go('setup'); // signed up but no username yet
   } catch {

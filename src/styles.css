@@ -311,3 +311,12 @@ textarea.input { resize: vertical; min-height: 90px; }
 .lang-toggle { position: absolute; top: calc(var(--safe-t) + 10px); right: 14px; z-index: 5; }
 .open-app { margin: 10px 14px 0; width: calc(100% - 28px); }
 .small-link { font-size: 13px; opacity: .8; margin-top: 18px; }
+
+/* ban screen */
+.banned { display: flex; align-items: center; justify-content: center; text-align: center; padding: 24px; background: #1a0b0b; }
+.ban-box { display: flex; flex-direction: column; gap: 10px; align-items: center; max-width: 360px; }
+.ban-icon { font-size: 64px; }
+.ban-box h1 { font-size: 26px; color: #ff6b6b; }
+.ban-for { font-size: 20px; font-weight: 700; }
+.ban-reason { font-size: 18px; }
+.ban-left { font-size: 28px; font-variant-numeric: tabular-nums; margin: 8px 0; }

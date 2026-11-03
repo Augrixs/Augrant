@@ -1,6 +1,7 @@
 import { h, toast, sheet, fmtDate, ago, confirmSheet, loadingOverlay } from '../util.js';
 import { sb, adminCall, me } from '../supa.js';
 import { adminGiveAuru } from '../economy.js';
+import { DURATIONS, REASONS, activeBan, banUser, unbanUser } from '../bans.js';
 
 const ACTION_LABEL = {
   login: 'เข้าสู่ระบบ',
@@ -126,6 +127,28 @@ export function adminView() {
     const actRow = (x) => h('div', { class: 'li' }, fmtDate(x.created_at) + ' · ' + (ACTION_LABEL[x.type] || x.type) + (x.detail && x.detail.title ? ' · ' + x.detail.title : ''));
 
     const isSelf = u.id === me.user.id;
+    const banNow = await activeBan(u.id).catch(() => null);
+    const dur = h('select', { class: 'input' }, DURATIONS.map(([m, l]) => h('option', { value: m }, l)));
+    const why = h('select', { class: 'input' }, REASONS.map((r) => h('option', { value: r }, r)));
+    const note = h('input', { class: 'input', type: 'text', placeholder: 'Note (optional)', maxlength: 120 });
+    const banBtn = h('button', { class: 'btn danger', type: 'button' }, 'Ban');
+    banBtn.addEventListener('click', async () => {
+      if (!(await confirmSheet('Ban @' + u.username, 'Ban for ' + dur.options[dur.selectedIndex].text + ' · ' + why.value + '?', 'Ban'))) return;
+      if (await act1('Banning...', () => banUser(u.id, Number(dur.value), why.value, note.value))) {
+        toast('Banned @' + u.username);
+        s.close();
+      }
+    });
+    const unbanBtn = h('button', { class: 'btn', type: 'button' }, 'Unban');
+    unbanBtn.addEventListener('click', async () => {
+      if (await act1('Unbanning...', () => unbanUser(u.id))) {
+        toast('Unbanned');
+        s.close();
+      }
+    });
+    const banBox = isSelf
+      ? null
+      : h('div', { class: 'card stack' }, h('b', {}, 'Ban'), banNow ? h('div', { class: 'err' }, `Banned: ${banNow.label} · ${banNow.reason}`) : null, h('label', { class: 'field' }, 'Time', dur), h('label', { class: 'field' }, 'Reason', why), note, h('div', { class: 'row' }, banBtn, banNow ? unbanBtn : null));
     const ren = h('input', { class: 'input', type: 'text', value: u.username, autocapitalize: 'none', spellcheck: 'false' });
     const pw = h('input', { class: 'input', type: 'text', placeholder: 'รหัสผ่านใหม่ (อย่างน้อย 8 ตัว)', autocapitalize: 'none' });
 
@@ -144,6 +167,7 @@ export function adminView() {
 
     body.replaceChildren(
       h('div', { class: 'kv' }, h('b', {}, 'ชื่อเล่น'), h('span', {}, u.display_name || '-'), h('b', {}, 'สร้างบัญชีเมื่อ'), h('span', {}, fmtDate(u.created_at)), h('b', {}, 'เข้าล่าสุด'), h('span', {}, fmtDate(u.last_login)), h('b', {}, 'ใช้ล่าสุด'), h('span', {}, fmtDate(u.last_seen))),
+      banBox,
       h('b', {}, 'เวลาเข้า-ออกแอป'),
       h('div', { class: 'list' }, ses.data && ses.data.length ? ses.data.map(sessionRow) : h('div', { class: 'muted' }, 'ยังไม่มีข้อมูล')),
       h('b', {}, 'คลิปที่สร้าง'),
