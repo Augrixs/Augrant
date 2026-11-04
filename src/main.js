@@ -36,6 +36,7 @@ function navBar(active) {
   const bar = h('nav', { class: 'nav', 'aria-label': 'เมนูหลัก' });
   items.forEach(([id, ic, label, n]) => {
     const b = h('button', { type: 'button', class: id === active ? 'on' : '' }, h('span', { class: 'ic-wrap' }, icon(ic), n ? h('span', { class: 'badge' }, n > 99 ? '99+' : String(n)) : null), label);
+    if (id === 'admin') b.classList.add('admin-tab');
     b.addEventListener('click', () => go(id));
     bar.append(b);
   });
