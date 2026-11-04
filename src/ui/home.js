@@ -4,7 +4,7 @@ import { framedAvatar, styledName } from './shop.js';
 import { avatar } from '../social.js';
 import { listProjects, renameProject, trashProject, restoreProject, deleteProject, purgeOld, daysLeft } from '../projects.js';
 import { sheet, ago, ICON } from '../util.js';
-import { me, canOpenApp, openAppWithSession, updateProfile, signOutNow, hasRealEmail, startEmailChange, finishEmailChange } from '../supa.js';
+import { sb, me, canOpenApp, openAppWithSession, updateProfile, signOutNow, hasRealEmail, startEmailChange, finishEmailChange } from '../supa.js';
 import { QUALITIES, FORMATS } from '../engine/exporter.js';
 import { MODELS, clearModelCache } from '../engine/whisper.js';
 import { setSfx } from '../sfx.js';
@@ -216,6 +216,14 @@ export function settingsView(go) {
       h('label', { class: 'field' }, t('ภาษา', 'Language'), sel('lang', [['th', 'ไทย'], ['en', 'English']], s.lang || 'th', (v) => { upd('lang', v); go('settings'); })),
       personalBox(),
       h('button', { class: 'btn', type: 'button', onclick: () => go('trash') }, icon('trash'), t('ถังขยะ (โปรเจกต์ที่ลบ)', 'Trash (deleted projects)')),
+      h('a', { class: 'small-link', href: 'https://augrixs.github.io/Augrant/privacy.html', target: '_blank', rel: 'noopener' }, t('นโยบายความเป็นส่วนตัว', 'Privacy Policy')),
+      h('button', { class: 'btn danger', type: 'button', onclick: async () => {
+        if (!(await confirmSheet(t('ลบบัญชี', 'Delete account'), t('บัญชีและข้อมูลทั้งหมดจะถูกลบถาวร กู้คืนไม่ได้', 'Your account and all data will be deleted permanently. This cannot be undone.'), t('ลบบัญชี', 'Delete account')))) return;
+        const { error } = await sb.rpc('delete_my_account');
+        if (error) return toast(error.message, 4500);
+        await signOutNow().catch(() => {});
+        location.reload();
+      } }, t('ลบบัญชี', 'Delete account')),
       h('label', { class: 'field' }, t('ความละเอียดเริ่มต้นตอน Export', 'Default export resolution'), sel('q', QUALITIES.map((q) => [q.id, q.label]), s.quality, (v) => upd('quality', v))),
       h('label', { class: 'field' }, t('ชนิดไฟล์เริ่มต้น', 'Default file type'), sel('f', FORMATS.map((f) => [f.id, f.label]), s.format, (v) => upd('format', v))),
       h('label', { class: 'field' }, t('ความดังเสียงพูดเริ่มต้น (1-1000)', 'Default voice volume (1-1000)'), vol('vv', s.voiceVol, (n) => upd('voiceVol', n))),
@@ -263,7 +271,7 @@ export function settingsView(go) {
         },
         'Log out',
       ),
-      h('p', { class: 'muted small' }, 'Augrant 1.5.1'),
+      h('p', { class: 'muted small' }, 'Augrant 1.5.2'),
       h('button', { class: 'mc-btn small', type: 'button', onclick: () => go('home') }, 'Done'),
     ),
   );
