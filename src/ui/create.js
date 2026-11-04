@@ -230,6 +230,17 @@ export function createFlow(onExit, openId) {
   const files = { audio: null, video: null };
   let project = null;
   let transport = null;
+  // Like CapCut: touching any control or the timeline while the clip plays pauses it first (not the play button itself).
+  root.addEventListener('pointerdown', (e) => {
+    if (!transport || !transport.playing) return;
+    if (e.target.closest && (e.target.closest('[aria-label="เล่นหรือหยุด"]') || e.target.closest('.sheet'))) return;
+    transport.pause();
+    const pb = root.querySelector('[aria-label="เล่นหรือหยุด"]');
+    if (pb) {
+      pb.innerHTML = ICON.play;
+      pb.dataset.starting = '0';
+    }
+  }, true);
   let picker = null;
   let saver = null;
 
@@ -381,6 +392,7 @@ export function createFlow(onExit, openId) {
         aClips: p.aClips,
         vClips: p.vClips,
         vol: p.vol,
+        fx: p.fx || null,
         style: p.style,
         words: p.words,
         texts: p.texts,
@@ -902,6 +914,38 @@ export function createFlow(onExit, openId) {
       sheet('ฟอนต์และสี (คำบรรยาย)', h('div', {}, pk.el), { onClose: () => pk.dispose() });
     }
 
+    /* ---- look of the background video: colour, blur, chroma key ---- */
+    function lookSheet() {
+      const fx = (p.fx = p.fx || {});
+      fx.chroma = fx.chroma || { on: false, color: '#00ff00', tol: 40, soft: 20 };
+      const slider = (label, get, set, min, max, step = 1) => {
+        const range = h('input', { type: 'range', min, max, step, value: get() });
+        const out = h('span', { class: 'muted small' }, String(get()));
+        range.addEventListener('input', () => { set(Number(range.value)); out.textContent = range.value; transport.refresh(); });
+        return h('div', { class: 'stack' }, h('div', { class: 'row' }, h('b', { class: 'grow' }, label), out), range);
+      };
+      const on = h('input', { type: 'checkbox' });
+      on.checked = !!fx.chroma.on;
+      on.addEventListener('change', () => { fx.chroma.on = on.checked; transport.refresh(); });
+      const col = h('input', { type: 'color', value: fx.chroma.color });
+      col.addEventListener('input', () => { fx.chroma.color = col.value; transport.refresh(); });
+      const preset = (label, c) => h('button', { class: 'btn sm', type: 'button', onclick: () => { fx.chroma.color = c; col.value = c; transport.refresh(); } }, label);
+      const reset = h('button', { class: 'btn', type: 'button', onclick: () => { p.fx = null; s.close(); transport.refresh(); toast('Reset'); } }, 'Reset');
+      const s = sheet('Look', h('div', { class: 'stack' },
+        slider('Brightness', () => fx.brightness ?? 100, (v) => (fx.brightness = v), 20, 200),
+        slider('Contrast', () => fx.contrast ?? 100, (v) => (fx.contrast = v), 20, 200),
+        slider('Saturation', () => fx.saturate ?? 100, (v) => (fx.saturate = v), 0, 300),
+        slider('Blur', () => fx.blur ?? 0, (v) => (fx.blur = v), 0, 20),
+        slider('Darken (%)', () => Math.round((fx.dim ?? 0.22) * 100), (v) => (fx.dim = v / 100), 0, 80),
+        h('div', { class: 'card stack' },
+          h('label', { class: 'row' }, on, h('b', {}, 'Remove background color (chroma key)')),
+          h('div', { class: 'row' }, col, preset('Green', '#00ff00'), preset('Blue', '#0000ff')),
+          slider('Strength', () => fx.chroma.tol, (v) => (fx.chroma.tol = v), 5, 80),
+          slider('Edge softness', () => fx.chroma.soft, (v) => (fx.chroma.soft = v), 1, 50),
+          h('p', { class: 'muted small' }, 'Works best on a plain green or blue screen. Removing any background automatically (AI) is not in the app yet.')),
+        reset));
+    }
+
     /* ---- volume and speed ---- */
     function volumeSheet() {
       const row = (label, key, enabled) => {
@@ -1031,9 +1075,9 @@ export function createFlow(onExit, openId) {
       const done = tool('close', 'เสร็จ', () => select(null));
       let items;
       if (!sel) {
-        items = [tool('film', 'Video+', addVideo), tool('music', 'Audio+', addAudio), tool('caption', 'Captions', captionsSheet), tool('text', 'Text+', addText), tool('style', 'Style', styleSheet), tool('volume', 'Volume', volumeSheet)];
+        items = [tool('film', 'Video+', addVideo), tool('music', 'Audio+', addAudio), tool('caption', 'Captions', captionsSheet), tool('text', 'Text+', addText), tool('style', 'Style', styleSheet), tool('volume', 'Volume', volumeSheet), tool('style', 'Look', lookSheet)];
       } else if (sel.kind === 'v') {
-        items = [done, tool('scissors', 'Split', split), tool('speed', 'Speed', () => speedSheet('v')), tool('volume', 'Volume', volumeSheet), tool('film', 'Video+', addVideo), tool('trash', 'Delete', remove, 'del')];
+        items = [done, tool('scissors', 'Split', split), tool('speed', 'Speed', () => speedSheet('v')), tool('volume', 'Volume', volumeSheet), tool('style', 'Look', lookSheet), tool('film', 'Video+', addVideo), tool('trash', 'Delete', remove, 'del')];
       } else if (sel.kind === 'a') {
         items = [done, tool('scissors', 'Split', split), tool('speed', 'Speed', () => speedSheet('a')), tool('volume', 'Volume', volumeSheet), tool('music', 'Audio+', addAudio), tool('trash', 'Delete', remove, 'del')];
       } else if (sel.kind === 'caption') {
@@ -1216,7 +1260,7 @@ export function createFlow(onExit, openId) {
         const file = f instanceof File ? f : new File([f], m.name, { type: f.type });
         sources[m.id] = m.kind === 'video' ? await loadVideoSrc(file, m.id) : await loadAudioSrc(file, m.id);
       }
-      project = { id, title: rec.name, sources, aClips: d.aClips, vClips: d.vClips, vol: d.vol, style: d.style, words: d.words || [], texts: d.texts || [], lang: d.lang || undefined, wordsVersion: 0 };
+      project = { id, title: rec.name, sources, aClips: d.aClips, vClips: d.vClips, vol: d.vol, fx: d.fx || undefined, style: d.style, words: d.words || [], texts: d.texts || [], lang: d.lang || undefined, wordsVersion: 0 };
       ov.done();
       stepEditor();
     } catch (e) {

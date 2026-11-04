@@ -137,6 +137,38 @@ export async function primeVideo(p, t, tol = 0.02) {
   v._clipId = c.id;
 }
 
+// Look of the background video: brightness / contrast / saturation / blur (CSS filter on the canvas).
+function filterOf(fx) {
+  const parts = [];
+  if (fx.brightness != null && fx.brightness !== 100) parts.push('brightness(' + fx.brightness + '%)');
+  if (fx.contrast != null && fx.contrast !== 100) parts.push('contrast(' + fx.contrast + '%)');
+  if (fx.saturate != null && fx.saturate !== 100) parts.push('saturate(' + fx.saturate + '%)');
+  if (fx.blur) parts.push('blur(' + fx.blur + 'px)');
+  return parts.length ? parts.join(' ') : 'none';
+}
+
+// Chroma key: pixels close to the key colour become transparent (green / blue screen).
+function keyOut(ctx, W, H, ck) {
+  const hex = String(ck.color || '#00ff00').replace('#', '');
+  const kr = parseInt(hex.slice(0, 2), 16), kg = parseInt(hex.slice(2, 4), 16), kb = parseInt(hex.slice(4, 6), 16);
+  const tol = ((ck.tol == null ? 40 : ck.tol) / 100) * 441;
+  const soft = Math.max(1, ((ck.soft == null ? 20 : ck.soft) / 100) * 441);
+  let img;
+  try {
+    img = ctx.getImageData(0, 0, W, H);
+  } catch {
+    return;
+  }
+  const d = img.data;
+  for (let i = 0; i < d.length; i += 4) {
+    const dr = d[i] - kr, dg = d[i + 1] - kg, db = d[i + 2] - kb;
+    const dist = Math.sqrt(dr * dr + dg * dg + db * db);
+    if (dist < tol) d[i + 3] = 0;
+    else if (dist < tol + soft) d[i + 3] = Math.round((d[i + 3] * (dist - tol)) / soft);
+  }
+  ctx.putImageData(img, 0, 0);
+}
+
 // Draws one frame. `hit` (optional array) receives bounding boxes in logical coordinates.
 export function renderFrame(ctx, W, H, p, t, opts = {}) {
   const hit = opts.hit;
@@ -147,21 +179,28 @@ export function renderFrame(ctx, W, H, p, t, opts = {}) {
   const clip = clipAt(p.vClips, t);
   const v = videoOf(p, clip);
   const bg = bgLayer(p, W, H);
+  const fx = p.fx || {};
   if (clip && v && v.readyState >= 2 && v.videoWidth) {
     const sc = Math.max(LW / v.videoWidth, LH / v.videoHeight);
     const dw = v.videoWidth * sc;
     const dh = v.videoHeight * sc;
     bg.ctx.setTransform(W / LW, 0, 0, H / LH, 0, 0);
+    if (fx.chroma && fx.chroma.on) bg.ctx.clearRect(0, 0, LW, LH);
+    const f = filterOf(fx);
+    bg.ctx.filter = f;
     bg.ctx.drawImage(v, (LW - dw) / 2, (LH - dh) / 2, dw, dh);
+    bg.ctx.filter = 'none';
+    if (fx.chroma && fx.chroma.on) keyOut(bg.ctx, W, H, fx.chroma);
     bg.has = true;
   }
   if (clip && bg.has) {
     // the last decoded frame stays on screen while the video catches up after a seek
+    if (fx.chroma && fx.chroma.on) drawGradient(ctx, opts.now || 0);
     ctx.drawImage(bg.cv, 0, 0, LW, LH);
   } else {
     drawGradient(ctx, opts.now || 0);
   }
-  ctx.fillStyle = 'rgba(0,0,0,0.22)';
+  ctx.fillStyle = 'rgba(0,0,0,' + (fx.dim == null ? 0.22 : fx.dim) + ')';
   ctx.fillRect(0, 0, LW, LH);
 
   ctx.textBaseline = 'alphabetic';
