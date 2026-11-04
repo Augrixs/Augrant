@@ -8,6 +8,7 @@ import { homeView, settingsView, creditsView, trashView, bannedView } from './ui
 import { activeBan } from './bans.js';
 import { profileView } from './ui/profile.js';
 import { adminView } from './ui/admin.js';
+import { adminCodeView } from './ui/admincode.js';
 import { createFlow } from './ui/create.js';
 import { socialView, userView } from './ui/social.js';
 import { postsView, postView } from './ui/posts.js';
@@ -79,6 +80,7 @@ function takeDeepLink() {
   return id;
 }
 
+let adminOk = false; // admin code entered this session
 let banNow = null; // the active ban of this account, if any
 async function checkBan() {
   if (!me.user) return;
@@ -143,6 +145,7 @@ function go(route) {
       return arg ? mount(chatView(go, arg, refreshBadges), 'chat') : mount(chatListView(go), 'chat');
     case 'admin':
       if (me.profile.role !== 'admin') return go('home');
+      if (!adminOk) return mount(adminCodeView(() => { adminOk = true; go('admin'); }, () => go('home')), 'admin');
       return mount(adminView(), 'admin');
     default:
       return go('home');

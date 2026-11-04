@@ -67,8 +67,8 @@ const niceAuthError = (e) => {
   return m;
 };
 
-export async function sendEmailCode(email) {
-  const { error } = await sb.auth.signInWithOtp({ email: email.trim().toLowerCase(), options: { shouldCreateUser: true, emailRedirectTo: 'https://augrixs.github.io/Augrant/' } });
+export async function sendEmailCode(email, create = true) {
+  const { error } = await sb.auth.signInWithOtp({ email: email.trim().toLowerCase(), options: { shouldCreateUser: create, emailRedirectTo: 'https://augrixs.github.io/Augrant/' } });
   if (error) throw new Error(niceAuthError(error));
 }
 
