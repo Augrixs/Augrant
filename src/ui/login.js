@@ -60,7 +60,6 @@ export function loginView(go) {
         g,
         err,
         h('p', { class: 'notice' }, 'ใช้บัญชี Google เข้าใช้งาน ถ้ายังไม่มีบัญชีใน Augrant จะให้ตั้ง username ต่อ'),
-        h('button', { class: 'link-btn small-link', type: 'button', onclick: signInStep }, 'บัญชีเก่า? เข้าด้วย Username'),
       ),
     );
   }
