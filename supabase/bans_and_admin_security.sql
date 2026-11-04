@@ -18,3 +18,6 @@ alter table public.admin_ids enable row level security; -- no policies: invisibl
 -- To add another admin (SQL editor only):
 --   insert into public.admin_ids values ('<uuid>');
 --   update public.profiles set role='admin' where id='<uuid>';
+
+-- Auto-moderation (applied): automod_check() trigger function rejects posts/comments/messages whose
+-- body contains blocked words/links (insults, NSFW, scam). Triggers: automod_posts, automod_comments, automod_messages.
