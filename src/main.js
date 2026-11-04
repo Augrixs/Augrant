@@ -2,8 +2,8 @@ import './fonts.js';
 import './styles.css';
 import { h, icon, lang } from './util.js';
 import { startTranslator } from './i18n.js';
-import { loadProfile, me, startTracking, handleAuthUrl, signOutNow } from './supa.js';
-import { loginView, setupView } from './ui/login.js';
+import { loadProfile, me, startTracking, handleAuthUrl, signOutNow, needVerify } from './supa.js';
+import { loginView, setupView, verifyView } from './ui/login.js';
 import { homeView, settingsView, creditsView, trashView, bannedView } from './ui/home.js';
 import { activeBan } from './bans.js';
 import { profileView } from './ui/profile.js';
@@ -104,6 +104,8 @@ function go(route) {
   switch (r) {
     case 'banned':
       return mount(bannedView(banNow || { label: '', reason: '' }, () => { banNow = null; go('home'); }, async () => { await signOutNow(); banNow = null; go('login'); }));
+    case 'verify':
+      return mount(verifyView(() => go(me.profile ? 'home' : 'setup'), () => go('login')));
     case 'login':
       return mount(loginView(go));
     case 'setup':
@@ -160,8 +162,10 @@ async function boot() {
       startTracking();
       setInterval(refreshBadges, 20000);
       await checkBan();
+      if (needVerify() && me.user) return go('verify');
       return go(banNow ? 'banned' : 'home');
     }
+    if (me.user && needVerify()) return go('verify');
     if (me.user) return go('setup'); // signed up but no username yet
   } catch {
     /* offline or session expired: show login */
@@ -176,7 +180,7 @@ try {
     if (await handleAuthUrl(url)) {
       const p = await loadProfile();
       if (p) startTracking();
-      return go(p ? 'home' : 'setup');
+      return go('verify');
     }
     const m = String(url || '').match(/#\/post\/([0-9a-f-]{36})/i);
     if (!m) return;

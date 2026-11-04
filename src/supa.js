@@ -105,10 +105,13 @@ export async function finishSignUp({ username, displayName, password, birthday, 
 }
 
 // Google. On the phone app the browser comes back through the com.augrixs.augrant:// link.
+export const needVerify = () => { try { return localStorage.getItem('augrant_verify') === '1'; } catch { return false; } };
+export const setVerify = (on) => { try { on ? localStorage.setItem('augrant_verify', '1') : localStorage.removeItem('augrant_verify'); } catch { /* ignore */ } };
 export async function googleSignIn() {
+  setVerify(true);
   const { data, error } = await sb.auth.signInWithOAuth({
     provider: 'google',
-    options: { redirectTo: isAppNative ? APP_SCHEME : WEB_HOME, skipBrowserRedirect: isAppNative },
+    options: { redirectTo: isAppNative ? APP_SCHEME : WEB_HOME, skipBrowserRedirect: isAppNative, queryParams: { prompt: 'select_account' } },
   });
   if (error) throw new Error(error.message);
   if (isAppNative && data && data.url) await Browser.open({ url: data.url });

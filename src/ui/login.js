@@ -1,5 +1,5 @@
 import { h, ICON, toast, lang, loadSettings, saveSettings } from '../util.js';
-import { signIn, sendEmailCode, verifyEmailCode, googleSignIn, finishSignUp, usernameFree, normUsername, validUsername, signOutNow } from '../supa.js';
+import { signIn, sendEmailCode, verifyEmailCode, googleSignIn, finishSignUp, usernameFree, normUsername, validUsername, signOutNow, me, setVerify } from '../supa.js';
 import cover from '../assets/cover.png';
 
 function pwField(placeholder, autocomplete) {
@@ -216,4 +216,36 @@ export function setupView(go) {
     form,
     h('button', { class: 'link-btn', type: 'button', onclick: async () => { await signOutNow(); go('login'); } }, 'ยกเลิก'),
   );
+}
+
+// After Google sign-in: confirm it is you and that you are human (press and hold), before entering the app.
+export function verifyView(onOk, onOther) {
+  const email = (me.user && me.user.email) || '';
+  const name = (me.user && me.user.user_metadata && (me.user.user_metadata.full_name || me.user.user_metadata.name)) || '';
+  const bar = h('div', { class: 'hold-bar' }, h('div', { class: 'hold-fill' }));
+  const fill = bar.firstChild;
+  const btn = h('button', { class: 'btn primary hold-btn', type: 'button' }, 'Press and hold to verify you are human');
+  let t0 = 0, raf = 0, done = false;
+  const step = () => {
+    const p = Math.min(1, (Date.now() - t0) / 1500);
+    fill.style.width = p * 100 + '%';
+    if (p >= 1 && !done) {
+      done = true;
+      setVerify(false);
+      return onOk();
+    }
+    if (!done) raf = requestAnimationFrame(step);
+  };
+  const start = (e) => { e.preventDefault(); if (done) return; t0 = Date.now(); raf = requestAnimationFrame(step); };
+  const stop = () => { cancelAnimationFrame(raf); if (!done) fill.style.width = '0%'; };
+  ['pointerdown'].forEach((ev) => btn.addEventListener(ev, start));
+  ['pointerup', 'pointerleave', 'pointercancel'].forEach((ev) => btn.addEventListener(ev, stop));
+  return h('div', { class: 'screen verify' },
+    h('div', { class: 'verify-box' },
+      h('h1', {}, "Confirm it's you"),
+      h('p', {}, 'Signed in with Google as'),
+      h('p', { class: 'verify-mail' }, (name ? name + ' · ' : '') + email),
+      bar, btn,
+      h('button', { class: 'small-link', type: 'button', onclick: async () => { setVerify(false); await signOutNow(); onOther(); } }, 'Not you? Use another account'),
+    ));
 }
