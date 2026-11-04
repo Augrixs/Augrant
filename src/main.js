@@ -6,6 +6,7 @@ import { loadProfile, me, startTracking, handleAuthUrl, signOutNow, needVerify }
 import { loginView, setupView, verifyView } from './ui/login.js';
 import { homeView, settingsView, creditsView, trashView, bannedView } from './ui/home.js';
 import { activeBan } from './bans.js';
+import { askNotifyPermission, notifyIfNew } from './notify.js';
 import { profileView } from './ui/profile.js';
 import { adminView } from './ui/admin.js';
 import { adminCodeView } from './ui/admincode.js';
@@ -56,6 +57,7 @@ async function refreshBadges() {
   checkBan();
   try {
     badges = await badgeCounts();
+    notifyIfNew(badges);
   } catch {
     return;
   }
@@ -164,6 +166,7 @@ async function boot() {
     const p = await loadProfile();
     if (p) {
       startTracking();
+      askNotifyPermission();
       setInterval(refreshBadges, 20000);
       await checkBan();
       if (needVerify() && me.user) return go('verify');

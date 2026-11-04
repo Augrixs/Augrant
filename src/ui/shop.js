@@ -58,6 +58,7 @@ export function shopView(go) {
         const m = /already/i.test(e.message) ? t('รับไปแล้ววันนี้', 'Already claimed') : /not enough|insufficient/i.test(e.message) ? t('Auru ไม่พอ', 'Not enough Auru') : e.message;
         toast(m, 4200);
       }
+      clearEqCache();
       render();
     };
 
@@ -146,14 +147,16 @@ export function shopView(go) {
 
 // Avatar / name that pick up the person's bought frame and name style once they load.
 // Ids asked for in the same moment are fetched with one query.
-const eqCache = new Map();
+const eqCache = new Map(); // id -> { p: Promise, t: time }; kept 8 seconds so changes show up quickly
+export const clearEqCache = () => eqCache.clear();
 let pending = new Map();
 let flushT = 0;
 function wantEq(id) {
   if (!id) return Promise.resolve({});
-  if (eqCache.has(id)) return eqCache.get(id);
+  const hit = eqCache.get(id);
+  if (hit && Date.now() - hit.t < 8000) return hit.p;
   const p = new Promise((res) => pending.set(id, res));
-  eqCache.set(id, p);
+  eqCache.set(id, { p, t: Date.now() });
   clearTimeout(flushT);
   flushT = setTimeout(async () => {
     const batch = pending;
