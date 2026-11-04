@@ -3,6 +3,7 @@ import { liveAvatar, liveName } from './shop.js';
 import { me, sb } from '../supa.js';
 import { avatar, nameOf, when, friendIds, postLink, noteView, viewCounts, getProfile } from '../social.js';
 import { clean } from '../core/profanity.js';
+import { reportBtn } from '../report.js';
 
 const BGS = [
   ['#2f6bff', '#6c3bff'],
@@ -110,7 +111,7 @@ function postCard(p, { go, onDeleted }) {
       } })
     : null;
   if (del) del.innerHTML = ICON.trash;
-  card.append(h('div', { class: 'row-between' }, who, del));
+  card.append(h('div', { class: 'row-between' }, who, h('div', { class: 'row' }, p.author === me.user.id ? null : reportBtn('post', p.id), del)));
 
   if (p.kind === 'text' && p.bg != null && bgCss(p.bg)) {
     card.append(h('div', { class: 'post-bg', style: { background: bgCss(p.bg) } }, clean(p.body)));
@@ -187,6 +188,7 @@ function commentsSheet(p, onCount, go) {
               { class: 'comment' },
               liveAvatar(c.profiles, 34),
               h('div', { class: 'grow' }, liveName(c.profiles, clean(nameOf(c.profiles)), 'b'), h('div', {}, clean(c.body)), h('div', { class: 'muted small' }, when(c.created_at))),
+              c.author === me.user.id ? null : reportBtn('comment', c.id),
               del,
             );
           })

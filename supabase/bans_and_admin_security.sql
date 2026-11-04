@@ -21,3 +21,7 @@ alter table public.admin_ids enable row level security; -- no policies: invisibl
 
 -- Auto-moderation (applied): automod_check() trigger function rejects posts/comments/messages whose
 -- body contains blocked words/links (insults, NSFW, scam). Triggers: automod_posts, automod_comments, automod_messages.
+
+-- Reports (applied): table reports(reporter,target_type,target_id,reason) admin-readable only;
+-- posts.hidden / comments.hidden + restrictive SELECT policies not_hidden_posts / not_hidden_comments;
+-- RPC report_content(p_type,p_id,p_reason): 3 reports auto-hide; RPC admin_review(p_type,p_id,p_keep) admin only.

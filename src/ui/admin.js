@@ -65,8 +65,35 @@ export function adminView() {
       gBtn.disabled = false;
     }
   });
+  const repBox = h('div', { class: 'list' });
+  async function loadReports() {
+    repBox.replaceChildren(h('div', { class: 'muted' }, 'Loading...'));
+    const { data: reps } = await sb.from('reports').select('*').order('created_at', { ascending: false }).limit(60);
+    const groups = new Map();
+    for (const r of reps || []) {
+      const k = r.target_type + ':' + r.target_id;
+      (groups.get(k) || groups.set(k, { type: r.target_type, id: r.target_id, reasons: [] }).get(k)).reasons.push(r.reason);
+    }
+    const rows = [];
+    for (const g of groups.values()) {
+      let body = '';
+      if (g.type === 'post') body = ((await sb.from('posts').select('body,hidden').eq('id', g.id).maybeSingle()).data || {}).body || '(deleted)';
+      if (g.type === 'comment') body = ((await sb.from('comments').select('body,hidden').eq('id', g.id).maybeSingle()).data || {}).body || '(deleted)';
+      const run = async (keep) => {
+        const { error } = await sb.rpc('admin_review', { p_type: g.type, p_id: g.id, p_keep: keep });
+        toast(error ? error.message : keep ? 'Kept' : 'Deleted');
+        loadReports();
+      };
+      rows.push(h('div', { class: 'li' }, h('b', {}, g.type + ' · ' + g.reasons.length + ' report(s)'), h('div', { class: 'muted small' }, [...new Set(g.reasons)].join(', ')), h('div', {}, (body || '').slice(0, 140)),
+        g.type === 'user' ? null : h('div', { class: 'row' }, h('button', { class: 'btn sm', type: 'button', onclick: () => run(true) }, 'Keep'), h('button', { class: 'btn danger sm', type: 'button', onclick: () => run(false) }, 'Delete'))));
+    }
+    repBox.replaceChildren(...(rows.length ? rows : [h('div', { class: 'muted' }, 'No reports')]));
+  }
+  loadReports();
   wrap.append(
     h('h2', {}, 'Admin Panel Augrixs Rant'),
+    h('div', { class: 'row' }, h('b', { class: 'grow' }, 'Reports'), h('button', { class: 'btn sm', type: 'button', onclick: loadReports }, 'Refresh')),
+    repBox,
     h('div', { class: 'card stack' }, h('b', {}, 'ให้ Auru (ตัวเองหรือคนอื่นตาม username)'), gName, gAmt, h('small', { class: 'muted' }, 'ใส่เลขติดลบเพื่อหักคืนได้ (ยอดไม่ต่ำกว่า 0) ใส่ได้เกินล้าน'), gBtn),
     h('div', { class: 'row' }, h('b', { class: 'grow' }, 'บัญชีทั้งหมด'), h('button', { class: 'btn sm', type: 'button', onclick: refresh }, 'รีเฟรช')),
     status,
